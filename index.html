@@ -258,7 +258,7 @@
 <body>
 <div class="halo"></div>
 <main>
-  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v3</span></div>
+  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v4</span></div>
 
   <!-- Entry: no code in the URL -->
   <section id="screen-entry" hidden>
@@ -338,8 +338,16 @@
         <div class="video-actions">
           <button id="watch-start" class="primary" hidden>مشاهدة مع المضيف</button>
           <button id="watch-open-url" class="ghost" hidden>فتح الرابط في المتصفح</button>
+          <button id="watch-options" class="ghost" hidden>خيارات المشاهدة</button>
           <button id="watch-retry" class="ghost" hidden>إعادة المحاولة</button>
           <button id="watch-open-app" class="ghost" hidden>افتح في تطبيق RAIF</button>
+        </div>
+        <div id="watch-options-panel" class="video-actions" hidden>
+          <button id="watch-vlc" class="ghost" hidden>فتح في VLC</button>
+          <button id="watch-infuse" class="ghost" hidden>فتح في Infuse</button>
+          <button id="watch-android-player" class="ghost" hidden>اختيار مشغّل آخر</button>
+          <button id="watch-copy" class="ghost">نسخ رابط البث</button>
+          <button id="watch-share" class="ghost">مشاركة رابط البث</button>
         </div>
       </div>
 
@@ -390,6 +398,9 @@
     "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js",
     "https://unpkg.com/hls.js@1/dist/hls.min.js"
   ];
+  var platformIsIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var platformIsAndroid = /Android/i.test(navigator.userAgent);
 
   var state = {
     code: "",
@@ -787,6 +798,8 @@
     $("watch-frame").hidden = true;
     $("watch-start").hidden = true;
     $("watch-open-url").hidden = true;
+    $("watch-options").hidden = true;
+    $("watch-options-panel").hidden = true;
     $("watch-retry").hidden = true;
     $("watch-open-app").hidden = true;
     watchState("بانتظار البث");
@@ -858,6 +871,8 @@
     $("watch-frame").hidden = true;
     $("watch-start").hidden = false;
     $("watch-open-url").hidden = true;
+    $("watch-options").hidden = false;
+    $("watch-options-panel").hidden = true;
     $("watch-retry").hidden = true;
     $("watch-open-app").hidden = true;
     watchState("البث جاهز");
@@ -885,6 +900,7 @@
     watch.failed = false;
     $("watch-frame").hidden = false;
     $("watch-open-url").hidden = false;
+    $("watch-options").hidden = false;
     $("watch-retry").hidden = true;
     $("watch-open-app").hidden = true;
     watchState("يتبع المضيف");
@@ -941,6 +957,110 @@
   function openStreamUrl() {
     if (!watch.stream || !watch.stream.url) return;
     try { window.open(watch.stream.url, "_blank", "noopener"); } catch (error) { /* ignored */ }
+  }
+
+  // A guest who already has a player on the phone can hand the stream to it
+  // instead of relying on what the browser can decode. The external player keeps
+  // its own position, so it starts from the beginning and does not follow the
+  // host; the panel says that before opening anything.
+  function currentStreamUrl() {
+    return (watch.stream && watch.stream.url) || "";
+  }
+
+  function openExternalPlayer(target, name) {
+    if (!currentStreamUrl()) return;
+    $("watch-options-panel").hidden = true;
+    watchHint("جارٍ فتح " + name + ". إن لم يفتح، انسخ رابط البث وألصقه داخل المشغّل.");
+    try { window.location.href = target; } catch (error) { /* ignored */ }
+  }
+
+  function openInVlc() {
+    var url = currentStreamUrl();
+    if (!url) return;
+    if (platformIsIos) {
+      openExternalPlayer(
+        "vlc-x-callback://x-callback-url/stream?url=" + encodeURIComponent(url),
+        "VLC"
+      );
+      return;
+    }
+    if (platformIsAndroid) {
+      openExternalPlayer(
+        "intent:" + url + "#Intent;action=android.intent.action.VIEW;package=org.videolan.vlc;end",
+        "VLC"
+      );
+      return;
+    }
+    openExternalPlayer("vlc://" + url, "VLC");
+  }
+
+  function openInInfuse() {
+    var url = currentStreamUrl();
+    if (!url) return;
+    openExternalPlayer(
+      "infuse://x-callback-url/play?url=" + encodeURIComponent(url),
+      "Infuse"
+    );
+  }
+
+  function openInAndroidPlayer() {
+    var url = currentStreamUrl();
+    if (!url) return;
+    openExternalPlayer(
+      "intent:" + url + "#Intent;action=android.intent.action.VIEW;end",
+      "تطبيق آخر"
+    );
+  }
+
+  function copyStreamUrl() {
+    var url = currentStreamUrl();
+    if (!url) return;
+    function done(ok) {
+      watchHint(
+        ok
+          ? "تم نسخ رابط البث. ألصقه داخل أي مشغّل يدعم الروابط."
+          : "انسخ رابط البث يدويًا من هذا الحقل."
+      );
+      if (!ok) {
+        try { window.prompt("رابط البث", url); } catch (error) { /* ignored */ }
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { done(true); })
+        .catch(function () { fallbackCopy(url, done); });
+      return;
+    }
+    fallbackCopy(url, done);
+  }
+
+  function fallbackCopy(url, done) {
+    var ok = false;
+    try {
+      var area = document.createElement("textarea");
+      area.value = url;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      ok = document.execCommand("copy");
+      document.body.removeChild(area);
+    } catch (error) {
+      ok = false;
+    }
+    done(!!ok);
+  }
+
+  function shareStreamUrl() {
+    var url = currentStreamUrl();
+    if (!url) return;
+    if (navigator.share) {
+      navigator.share({ title: "RAIF · حفلة مشاهدة", url: url }).catch(function () {
+        /* the guest dismissed the share sheet */
+      });
+      return;
+    }
+    copyStreamUrl();
   }
 
   function seekToParty() {
@@ -1011,6 +1131,7 @@
     $("watch-frame").hidden = true;
     $("watch-start").hidden = true;
     $("watch-open-url").hidden = false;
+    $("watch-options").hidden = false;
     $("watch-retry").hidden = false;
     $("watch-open-app").hidden = false;
     watchState("تعذّر التشغيل");
@@ -1277,6 +1398,21 @@
     $("watch-start").addEventListener("click", startWatching);
     $("watch-retry").addEventListener("click", startWatching);
     $("watch-open-url").addEventListener("click", openStreamUrl);
+    $("watch-options").addEventListener("click", function () {
+      var panel = $("watch-options-panel");
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) {
+        watchHint("المشغّل الخارجي يبدأ من البداية ولا يتبع المضيف؛ اختر تطبيقًا أو انسخ الرابط.");
+      }
+    });
+    $("watch-vlc").hidden = false;
+    if (platformIsIos) $("watch-infuse").hidden = false;
+    if (platformIsAndroid) $("watch-android-player").hidden = false;
+    $("watch-vlc").addEventListener("click", openInVlc);
+    $("watch-infuse").addEventListener("click", openInInfuse);
+    $("watch-android-player").addEventListener("click", openInAndroidPlayer);
+    $("watch-copy").addEventListener("click", copyStreamUrl);
+    $("watch-share").addEventListener("click", shareStreamUrl);
     $("watch-open-app").addEventListener("click", openInApp);
     var video = $("watch-video");
     if (video) {
