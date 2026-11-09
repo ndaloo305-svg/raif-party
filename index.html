@@ -77,6 +77,15 @@
     background: var(--accent);
     box-shadow: 0 0 16px rgba(226, 84, 60, 0.8);
   }
+  .brand .version {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
   h1 { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.01em; }
   h2 { font-size: 16px; font-weight: 600; margin: 0 0 10px; }
   p { margin: 0; }
@@ -228,13 +237,28 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .footer-actions { display: flex; flex-direction: column; gap: 10px; }
+  .video-frame {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 16 / 9;
+  }
+  .video-frame video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #000;
+  }
+  .video-actions { display: flex; flex-direction: column; gap: 10px; }
+  .video-actions button { width: 100%; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <div class="halo"></div>
 <main>
-  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة</div>
+  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v3</span></div>
 
   <!-- Entry: no code in the URL -->
   <section id="screen-entry" hidden>
@@ -302,6 +326,23 @@
         <div id="room-members" class="members"></div>
       </div>
 
+      <div class="card stack" id="watch-card">
+        <div class="row between">
+          <h2 style="margin:0">المشاهدة</h2>
+          <span class="pill" id="watch-state">—</span>
+        </div>
+        <div class="video-frame" id="watch-frame" hidden>
+          <video id="watch-video" playsinline webkit-playsinline preload="metadata" controls></video>
+        </div>
+        <p class="sub" id="watch-hint">جارٍ الاتصال بالحفلة…</p>
+        <div class="video-actions">
+          <button id="watch-start" class="primary" hidden>مشاهدة مع المضيف</button>
+          <button id="watch-open-url" class="ghost" hidden>فتح الرابط في المتصفح</button>
+          <button id="watch-retry" class="ghost" hidden>إعادة المحاولة</button>
+          <button id="watch-open-app" class="ghost" hidden>افتح في تطبيق RAIF</button>
+        </div>
+      </div>
+
       <div class="card stack">
         <h2>الدردشة</h2>
         <div id="chat" class="chat"></div>
@@ -339,6 +380,16 @@
   var MESSAGES_MS = 3000;
   var DEVICE_KEY = "raif_party_device";
   var NAME_KEY = "raif_party_name";
+  var SUPABASE_LIBRARIES = [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
+    "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
+  ];
+  var WATCH_REQUEST_MS = 12000;
+  var WATCH_SYNC_MS = 3000;
+  var HLS_LIBRARIES = [
+    "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js",
+    "https://unpkg.com/hls.js@1/dist/hls.min.js"
+  ];
 
   var state = {
     code: "",
@@ -351,6 +402,26 @@
     heartbeatTimer: null,
     messagesTimer: null,
     alive: true
+  };
+
+  var watch = {
+    libraryLoading: false,
+    libraryWaiters: [],
+    client: null,
+    channel: null,
+    stream: null,
+    subscribed: false,
+    waitTicks: 0,
+    playback: null,
+    mediaKey: "",
+    started: false,
+    failed: false,
+    following: false,
+    applying: false,
+    hls: null,
+    attachedUrl: "",
+    timer: null,
+    lastRequestAt: 0
   };
 
   function $(id) { return document.getElementById(id); }
@@ -526,12 +597,427 @@
       state.joined = true;
       state.lastMessageId = 0;
       applySnapshot(snapshot);
+      startWatch();
       show("screen-room");
       startPolling();
     }).catch(function () {
       $("join-go").disabled = false;
       messageScreen(errorText(null), true);
     });
+  }
+
+  // ----------------------------------------------------------------- watch
+  // The host's player broadcasts its stream link and its playback position on
+  // the party's realtime channel. The page joins that channel with the public
+  // key, so a guest without the app can play the host's link and follow the
+  // host's play, pause and seek.
+  function mediaKeyOf(media) {
+    if (!media) return "";
+    return [
+      String(media.meta_type || media.type || "").toLowerCase(),
+      media.meta_id || "",
+      media.season == null ? "" : String(media.season),
+      media.episode == null ? "" : String(media.episode)
+    ].join("|");
+  }
+
+  function watchState(text) {
+    $("watch-state").textContent = text || "—";
+  }
+
+  function watchHint(text) {
+    var hint = $("watch-hint");
+    hint.textContent = text || "";
+  }
+
+  function loadSupabaseLibrary(callback) {
+    if (window.supabase && window.supabase.createClient) {
+      callback(true);
+      return;
+    }
+    watch.libraryWaiters.push(callback);
+    if (watch.libraryLoading) return;
+    watch.libraryLoading = true;
+    tryNextLibrary(0);
+  }
+
+  function tryNextLibrary(index) {
+    if (window.supabase && window.supabase.createClient) {
+      settleLibrary(true);
+      return;
+    }
+    if (index >= SUPABASE_LIBRARIES.length) {
+      settleLibrary(false);
+      return;
+    }
+    var script = document.createElement("script");
+    script.src = SUPABASE_LIBRARIES[index];
+    script.async = true;
+    script.onload = function () {
+      settleLibrary(!!(window.supabase && window.supabase.createClient));
+    };
+    script.onerror = function () { tryNextLibrary(index + 1); };
+    document.head.appendChild(script);
+  }
+
+  function settleLibrary(ok) {
+    watch.libraryLoading = false;
+    var waiters = watch.libraryWaiters;
+    watch.libraryWaiters = [];
+    waiters.forEach(function (waiter) {
+      try { waiter(ok); } catch (error) { /* the page stays usable */ }
+    });
+  }
+
+  function startWatch() {
+    var party = state.snapshot && state.snapshot.party;
+    if (!party || !state.joined) return;
+    stopChannel();
+    watch.mediaKey = mediaKeyOf(party.media);
+    watch.subscribed = false;
+    watch.waitTicks = 0;
+    watchState("جارٍ الاتصال…");
+    watchHint("جارٍ الاتصال ببث الحفلة…");
+    watch.timer = window.setInterval(watchTick, WATCH_SYNC_MS);
+    loadSupabaseLibrary(function (ok) {
+      var current = state.snapshot && state.snapshot.party;
+      if (!ok || !state.joined || !current) {
+        watchState("غير متصل");
+        watchHint("تعذّر الاتصال ببث الحفلة هنا. يمكنك متابعة الدردشة، أو افتح الحفلة في التطبيق للمشاهدة.");
+        $("watch-open-app").hidden = false;
+        return;
+      }
+      try {
+        watch.client = window.supabase.createClient(SUPABASE_URL, ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+        var channel = watch.client.channel("watch-party:" + current.id, {
+          config: { private: true, broadcast: { self: false } }
+        });
+        channel.on("broadcast", { event: "stream" }, receiveStream);
+        channel.on("broadcast", { event: "state" }, receivePlayback);
+        channel.on("broadcast", { event: "ended" }, function () { endWith("party_ended"); });
+        channel.subscribe(function (status) {
+          if (status === "SUBSCRIBED") {
+            watch.subscribed = true;
+            watchState("متصل");
+            requestStream(true);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            watchState("غير متصل");
+          }
+        });
+        watch.channel = channel;
+      } catch (error) {
+        watchState("غير متصل");
+        watchHint("تعذّر الاتصال ببث الحفلة. افتح الحفلة في التطبيق للمشاهدة.");
+        $("watch-open-app").hidden = false;
+      }
+    });
+  }
+
+  function stopChannel() {
+    if (watch.timer) window.clearInterval(watch.timer);
+    watch.timer = null;
+    var channel = watch.channel;
+    var client = watch.client;
+    watch.channel = null;
+    watch.client = null;
+    watch.lastRequestAt = 0;
+    watch.playback = null;
+    watch.subscribed = false;
+    watch.waitTicks = 0;
+    if (channel) {
+      try {
+        if (client) client.removeChannel(channel);
+        else channel.unsubscribe();
+      } catch (error) { /* the channel is already gone */ }
+    }
+    clearStream();
+  }
+
+  function requestStream(force) {
+    var channel = watch.channel;
+    if (!channel) return;
+    if (!force && watch.lastRequestAt && Date.now() - watch.lastRequestAt < WATCH_REQUEST_MS) return;
+    watch.lastRequestAt = Date.now();
+    try {
+      channel.send({
+        type: "broadcast",
+        event: "state_request",
+        payload: { member_id: state.deviceId }
+      });
+    } catch (error) { /* the tick below keeps asking */ }
+  }
+
+  function receiveStream(message) {
+    var party = state.snapshot && state.snapshot.party;
+    var payload = (message && message.payload) || {};
+    if (!party) return;
+    if (payload.member_id && party.host_member_id && payload.member_id !== party.host_member_id) return;
+    var stream = payload.stream;
+    if (!stream || typeof stream.url !== "string" || !/^https?:\/\//i.test(stream.url)) {
+      clearStream();
+      return;
+    }
+    if (stream.media_key && watch.mediaKey && stream.media_key !== watch.mediaKey) return;
+    applyStream(stream);
+  }
+
+  function receivePlayback(message) {
+    var payload = (message && message.payload) || {};
+    if (typeof payload.position_ms !== "number") return;
+    if (payload.media_key && watch.mediaKey && payload.media_key !== watch.mediaKey) return;
+    watch.playback = payload;
+    syncVideo();
+  }
+
+  function clearStream() {
+    var video = $("watch-video");
+    detachHls();
+    watch.stream = null;
+    watch.started = false;
+    watch.failed = false;
+    watch.following = false;
+    watch.attachedUrl = "";
+    if (video) {
+      try { video.pause(); } catch (error) { /* ignored */ }
+      video.removeAttribute("src");
+      try { video.load(); } catch (error) { /* ignored */ }
+    }
+    $("watch-frame").hidden = true;
+    $("watch-start").hidden = true;
+    $("watch-open-url").hidden = true;
+    $("watch-retry").hidden = true;
+    $("watch-open-app").hidden = true;
+    watchState("بانتظار البث");
+    watchHint("سيظهر بث المضيف هنا تلقائيًا عند تشغيله.");
+  }
+
+  // The video element plays whatever the browser supports. HLS links are
+  // attached through hls.js when the browser has no native HLS support, which
+  // is what most debrid links need on Android and desktop browsers.
+  function isHlsUrl(url) {
+    return /\.m3u8(\?|#|$)/i.test(String(url || ""));
+  }
+
+  function hasNativeHls(video) {
+    return !!(video && video.canPlayType("application/vnd.apple.mpegurl"));
+  }
+
+  function detachHls() {
+    if (!watch.hls) return;
+    try { watch.hls.destroy(); } catch (error) { /* ignored */ }
+    watch.hls = null;
+  }
+
+  function ensureHlsLibrary(callback) {
+    if (window.Hls) { callback(true); return; }
+    var index = 0;
+    (function next() {
+      if (window.Hls) { callback(true); return; }
+      if (index >= HLS_LIBRARIES.length) { callback(false); return; }
+      var script = document.createElement("script");
+      script.src = HLS_LIBRARIES[index];
+      script.async = true;
+      script.onload = function () { callback(!!window.Hls); };
+      script.onerror = next;
+      document.head.appendChild(script);
+      index += 1;
+    })();
+  }
+
+  function attachSource(video, stream) {
+    detachHls();
+    watch.attachedUrl = stream.url;
+    if (isHlsUrl(stream.url) && !hasNativeHls(video) && window.Hls) {
+      var hls = new window.Hls({ lowLatencyMode: false, enableWorker: true });
+      watch.hls = hls;
+      hls.loadSource(stream.url);
+      hls.attachMedia(video);
+      return;
+    }
+    video.src = stream.url;
+    try { video.load(); } catch (error) { /* ignored */ }
+  }
+
+  function applyStream(stream) {
+    var video = $("watch-video");
+    var same = !!watch.stream && !!video && watch.attachedUrl === stream.url;
+    watch.stream = stream;
+    if (same) return;
+    detachHls();
+    watch.attachedUrl = "";
+    if (video) {
+      try { video.pause(); } catch (error) { /* ignored */ }
+      video.removeAttribute("src");
+      try { video.load(); } catch (error) { /* ignored */ }
+    }
+    watch.started = false;
+    watch.failed = false;
+    watch.following = false;
+    $("watch-frame").hidden = true;
+    $("watch-start").hidden = false;
+    $("watch-open-url").hidden = true;
+    $("watch-retry").hidden = true;
+    $("watch-open-app").hidden = true;
+    watchState("البث جاهز");
+    var label = [];
+    if (stream.name) label.push(stream.name);
+    if (stream.addon_name) label.push(stream.addon_name);
+    watchHint(
+      label.length
+        ? "اضغط «مشاهدة مع المضيف» لتشغيل " + label.join(" · ") + " مع الحفلة."
+        : "اضغط «مشاهدة مع المضيف» لتشغيل بث الحفلة."
+    );
+    // Try to start on its own; the tap is only needed when the browser blocks
+    // autoplay, in which case the button above stays visible.
+    window.setTimeout(function () {
+      if (watch.stream === stream && !watch.started && state.joined) startWatching();
+    }, 350);
+  }
+
+  function startWatching() {
+    var video = $("watch-video");
+    var stream = watch.stream;
+    if (!video || !stream) return;
+    var retry = watch.failed;
+    watch.started = true;
+    watch.failed = false;
+    $("watch-frame").hidden = false;
+    $("watch-open-url").hidden = false;
+    $("watch-retry").hidden = true;
+    $("watch-open-app").hidden = true;
+    watchState("يتبع المضيف");
+    watchHint("التشغيل يتبع المضيف؛ الإيقاف والانتقال يصلك تلقائيًا.");
+
+    function begin() {
+      if (watch.attachedUrl !== stream.url || retry) {
+        attachSource(video, stream);
+      }
+      playVideo();
+    }
+
+    if (isHlsUrl(stream.url) && !hasNativeHls(video) && !window.Hls) {
+      ensureHlsLibrary(function (ok) {
+        if (!ok) {
+          watch.failed = true;
+          watch.started = false;
+          $("watch-frame").hidden = true;
+          $("watch-open-url").hidden = false;
+          $("watch-open-app").hidden = false;
+          watchState("تعذّر التشغيل");
+          watchHint("تعذّر تحميل مشغّل HLS في هذا المتصفح. افتح الرابط مباشرة أو افتح الحفلة في التطبيق.");
+          return;
+        }
+        begin();
+      });
+      return;
+    }
+
+    begin();
+  }
+
+  function openInApp() {
+    var party = state.snapshot && state.snapshot.party;
+    var code = normalizeCode((party && party.code) || state.code || "");
+    window.location.href = "raif://party/" + encodeURIComponent(code);
+  }
+
+  function playVideo() {
+    var video = $("watch-video");
+    if (!video || !watch.stream) return;
+    seekToParty();
+    var promise = video.play();
+    if (promise && promise.catch) {
+      promise.catch(function () {
+        // Autoplay with sound was blocked: keep the button so one tap starts it.
+        $("watch-start").hidden = false;
+        watchState("اضغط للتشغيل");
+        watchHint("اضغط «مشاهدة مع المضيف» للسماح بالتشغيل، أو زر التشغيل داخل المشغّل.");
+      });
+    }
+  }
+
+  function openStreamUrl() {
+    if (!watch.stream || !watch.stream.url) return;
+    try { window.open(watch.stream.url, "_blank", "noopener"); } catch (error) { /* ignored */ }
+  }
+
+  function seekToParty() {
+    var video = $("watch-video");
+    if (!video || !watch.playback || video.readyState < 1) return;
+    var target = expectedPositionMs(watch.playback) / 1000;
+    if (!isFinite(target) || target < 0) return;
+    if (Math.abs((video.currentTime || 0) - target) <= 2) return;
+    try { video.currentTime = target; } catch (error) { /* ignored */ }
+  }
+
+  function expectedPositionMs(playback) {
+    if (!playback) return 0;
+    var base = Number(playback.position_ms) || 0;
+    if (playback.paused) return Math.max(0, base);
+    var rate = Number(playback.rate) || 1;
+    var at = Number(playback.at) || 0;
+    var elapsed = at > 0 ? Math.max(0, Date.now() - at) : 0;
+    return Math.max(0, base + elapsed * rate);
+  }
+
+  function syncVideo() {
+    var video = $("watch-video");
+    var playback = watch.playback;
+    if (!video || !watch.started || !watch.stream || watch.failed || !playback) return;
+    if (video.readyState < 1) return;
+    if (playback.paused) {
+      if (!video.paused) {
+        watch.applying = true;
+        try { video.pause(); } catch (error) { /* ignored */ }
+        watch.applying = false;
+      }
+      seekToParty();
+      return;
+    }
+    if (video.paused) {
+      if (watch.following) playVideo();
+      return;
+    }
+    seekToParty();
+  }
+
+  function syncWatchMedia(media) {
+    var key = mediaKeyOf(media);
+    if (!watch.mediaKey || !key || key === watch.mediaKey) return;
+    watch.mediaKey = key;
+    clearStream();
+    requestStream(true);
+  }
+
+  function watchTick() {
+    if (!state.joined) return;
+    syncVideo();
+    if (watch.stream) return;
+    watch.waitTicks += 1;
+    if (watch.waitTicks === 7) {
+      watchHint("لم يشارك المضيف بثه بعد. اطلب منه تشغيل الحلقة والتأكد من تفعيل «مشاركة البث الخاص بي» في لوحة الحفلة.");
+    } else if (!watch.subscribed && watch.waitTicks >= 3) {
+      watchState("جارٍ إعادة المحاولة");
+    }
+    requestStream(false);
+  }
+
+  function watchPlaybackError() {
+    watch.failed = true;
+    watch.started = false;
+    watch.following = false;
+    $("watch-frame").hidden = true;
+    $("watch-start").hidden = true;
+    $("watch-open-url").hidden = false;
+    $("watch-retry").hidden = false;
+    $("watch-open-app").hidden = false;
+    watchState("تعذّر التشغيل");
+    watchHint(
+      "المتصفح لا يستطيع تشغيل صيغة هذا البث (غالبًا MKV أو H.265). " +
+      "افتح الرابط في مشغّل خارجي، أو افتح الحفلة في تطبيق RAIF لمشاهدتها مع البقية."
+    );
   }
 
   // --------------------------------------------------------------- snapshot
@@ -543,10 +1029,12 @@
     if (!snapshot.party) return;
     state.snapshot = snapshot;
     renderRoom();
+    syncWatchMedia(snapshot.party.media);
   }
 
   function endWith(code) {
     stopTimers();
+    stopChannel();
     state.joined = false;
     messageScreen(errorText(code), !(code === "party_ended"));
   }
@@ -711,6 +1199,7 @@
     var party = state.snapshot && state.snapshot.party;
     state.joined = false;
     stopTimers();
+    stopChannel();
     if (party) leaveRequest(party.id, silent);
     if (!silent) {
       state.snapshot = null;
@@ -725,6 +1214,7 @@
   // form, with whatever the link carried already filled in.
   function backToEntry() {
     stopTimers();
+    stopChannel();
     state.joined = false;
     state.snapshot = null;
     state.preview = null;
@@ -749,7 +1239,10 @@
       return part.length > 0 && part.indexOf(".") < 0;
     });
     if (segments.length) {
-      return normalizeCode(segments[segments.length - 1]);
+      // Only a whole 6-character code in the path counts; a hosted path such as
+      // /user/repo/main must not be read as a code.
+      var candidate = normalizeCode(segments[segments.length - 1]);
+      if (candidate.length === CODE_LENGTH) return candidate;
     }
     return "";
   }
@@ -780,9 +1273,26 @@
     $("chat-input").addEventListener("keydown", function (event) {
       if (event.key === "Enter") sendMessage();
     });
-    $("open-app").addEventListener("click", function () {
-      window.location.href = "raif://party/" + encodeURIComponent(state.code);
-    });
+    $("open-app").addEventListener("click", openInApp);
+    $("watch-start").addEventListener("click", startWatching);
+    $("watch-retry").addEventListener("click", startWatching);
+    $("watch-open-url").addEventListener("click", openStreamUrl);
+    $("watch-open-app").addEventListener("click", openInApp);
+    var video = $("watch-video");
+    if (video) {
+      video.addEventListener("loadedmetadata", function () {
+        seekToParty();
+        if (watch.started && watch.playback && !watch.playback.paused) playVideo();
+      });
+      video.addEventListener("play", function () { watch.following = true; });
+      video.addEventListener("pause", function () {
+        if (!watch.applying) watch.following = false;
+      });
+      video.addEventListener("error", function () {
+        if (!watch.started || !watch.stream) return;
+        watchPlaybackError();
+      });
+    }
     $("leave").addEventListener("click", function () { leave(false); });
     $("message-back").addEventListener("click", backToEntry);
     window.addEventListener("pagehide", function () { leave(true); });
