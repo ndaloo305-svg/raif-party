@@ -21,6 +21,10 @@
 <meta name="twitter:description" content="انضم إلى حفلة مشاهدة على RAIF من متصفحك، بدون تحميل التطبيق.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/ndaloo305-svg/raif-party/main/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0b0d'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23e2543c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://wdgjjqwxsluumltezqlp.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://wdgjjqwxsluumltezqlp.supabase.co">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <style>
   :root {
     --bg: #0b0b0d;
@@ -252,13 +256,29 @@
   }
   .video-actions { display: flex; flex-direction: column; gap: 10px; }
   .video-actions button { width: 100%; }
+  .chat-toast {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    right: 12px;
+    left: 12px;
+    z-index: 60;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #12181f;
+    color: #f4f4f2;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: start;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .38);
+    cursor: pointer;
+  }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <div class="halo"></div>
 <main>
-  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v5</span></div>
+  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v6</span></div>
 
   <!-- Entry: no code in the URL -->
   <section id="screen-entry" hidden>
@@ -351,6 +371,20 @@
         </div>
       </div>
 
+      <div class="card stack" id="voice-card">
+        <div class="row between">
+          <h2 style="margin:0">الصوت</h2>
+          <span class="pill" id="voice-state">مطفأ</span>
+        </div>
+        <p class="sub" id="voice-hint">الصوت مطفأ افتراضيًا، ولكل مشارك أن ينضم أو لا. تعليق الصوت لا يمسّ الفيديو ولا المزامنة.</p>
+        <div class="video-actions">
+          <button id="voice-join" class="primary">الانضمام إلى الصوت</button>
+          <button id="voice-mic" class="ghost" hidden>كتم الميكروفون</button>
+          <button id="voice-leave" class="ghost" hidden>الخروج من الصوت</button>
+        </div>
+        <div id="voice-members" class="members" hidden></div>
+      </div>
+
       <div class="card stack">
         <h2>الدردشة</h2>
         <div id="chat" class="chat"></div>
@@ -359,6 +393,8 @@
           <button id="chat-send" class="primary" aria-label="إرسال">↑</button>
         </div>
       </div>
+
+      <div id="chat-toast" class="chat-toast" hidden></div>
 
       <div class="footer-actions">
         <button id="open-app" class="ghost">افتح الحفلة في تطبيق RAIF</button>
@@ -394,6 +430,12 @@
   ];
   var WATCH_REQUEST_MS = 12000;
   var WATCH_SYNC_MS = 1000;
+  // The guest follows the host: a small clock difference is corrected by
+  // nudging the playback speed, and only a real jump is answered with a hard
+  // seek, because a seek on a progressive file costs a full re-buffer.
+  var WATCH_RATE_TOLERANCE = 0.4;
+  var WATCH_HARD_SEEK_MS = 7000;
+  var WATCH_SEEK_COOLDOWN_MS = 6000;
   var HLS_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js",
     "https://unpkg.com/hls.js@1/dist/hls.min.js"
@@ -429,6 +471,7 @@
     mediaKey: "",
     started: false,
     failed: false,
+    blocked: false,
     following: false,
     applying: false,
     applyTimer: null,
@@ -712,6 +755,8 @@
         channel.on("broadcast", { event: "stream" }, receiveStream);
         channel.on("broadcast", { event: "state" }, receivePlayback);
         channel.on("broadcast", { event: "chat" }, receiveChat);
+        channel.on("broadcast", { event: "voice" }, receiveVoice);
+        channel.on("broadcast", { event: "voice_signal" }, receiveVoiceSignal);
         channel.on("broadcast", { event: "ended" }, function () { endWith("party_ended"); });
         channel.subscribe(function (status) {
           if (status === "SUBSCRIBED") {
@@ -749,6 +794,7 @@
       } catch (error) { /* the channel is already gone */ }
     }
     clearStream();
+    resetVoice();
   }
 
   function requestStream(force) {
@@ -793,6 +839,7 @@
     watch.stream = null;
     watch.started = false;
     watch.failed = false;
+    watch.blocked = false;
     watch.following = false;
     watch.attachedUrl = "";
     if (video) {
@@ -820,6 +867,65 @@
 
   function hasNativeHls(video) {
     return !!(video && video.canPlayType("application/vnd.apple.mpegurl"));
+  }
+
+  // A browser cannot open Matroska (.mkv) or the legacy containers below at
+  // all, and H.265 needs a decoder it may not have. Instead of handing such a
+  // link to the video element and reporting a decode error, the page names the
+  // format it found and offers a player that does support it.
+  var UNSUPPORTED_CONTAINERS = ["mkv", "avi", "wmv", "flv", "vob", "iso", "m2ts", "ts", "divx", "rmvb"];
+
+  function streamExtension(url) {
+    var path = String(url || "").split("#")[0].split("?")[0];
+    var match = /\.([a-z0-9]{2,5})$/i.exec(path);
+    return match ? match[1].toLowerCase() : "";
+  }
+
+  function unsupportedContainer(url) {
+    if (!url || isHlsUrl(url)) return "";
+    var ext = streamExtension(url);
+    return UNSUPPORTED_CONTAINERS.indexOf(ext) >= 0 ? ext.toUpperCase() : "";
+  }
+
+  function browserSupportsHevc() {
+    try {
+      if (window.MediaSource && window.MediaSource.isTypeSupported) {
+        if (window.MediaSource.isTypeSupported('video/mp4; codecs="hvc1.1.6.L93.B0"')) return true;
+        if (window.MediaSource.isTypeSupported('video/mp4; codecs="hev1.1.6.L93.B0"')) return true;
+      }
+    } catch (error) { /* fall back to the element probe */ }
+    var probe = document.createElement("video");
+    return !!(probe.canPlayType && probe.canPlayType('video/mp4; codecs="hvc1"'));
+  }
+
+  function unsupportedFormat(url) {
+    var container = unsupportedContainer(url);
+    if (container) return container;
+    var name = String(url || "").toLowerCase();
+    if (!/x265|h\.?265|hevc/.test(name)) return "";
+    return browserSupportsHevc() ? "" : "H.265";
+  }
+
+  function showUnsupportedStream(stream, label) {
+    clearStream();
+    watch.stream = stream;
+    watch.blocked = true;
+    watch.attachedUrl = stream.url;
+    $("watch-frame").hidden = true;
+    $("watch-start").hidden = true;
+    $("watch-open-url").hidden = true;
+    $("watch-options").hidden = false;
+    $("watch-options-panel").hidden = false;
+    $("watch-retry").hidden = false;
+    $("watch-open-app").hidden = false;
+    watchState("صيغة " + label);
+    var parts = [];
+    if (stream.name) parts.push(stream.name);
+    if (stream.addon_name) parts.push(stream.addon_name);
+    watchHint(
+      (parts.length ? label + " · " + parts.join(" · ") + " — " : label + " — ") +
+      "المتصفح لا يشغّل هذه الصيغة. افتح البث في تطبيق RAIF ليُشغَّل بمشغّل MPV داخل الحفلة، أو في VLC أو Infuse."
+    );
   }
 
   function detachHls() {
@@ -872,6 +978,19 @@
     }
     watch.started = false;
     watch.failed = false;
+    var blockedLabel = unsupportedFormat(stream.url);
+    if (!blockedLabel) {
+      // The link itself may not carry the codec; the stream name from the
+      // addon usually does, and an HEVC file freezes the picture after a
+      // successful open instead of reporting an error.
+      var named = String((stream.name || "") + " " + (stream.addon_name || "")).toLowerCase();
+      if (/x265|h\.?265|hevc/.test(named) && !browserSupportsHevc()) blockedLabel = "H.265";
+    }
+    if (blockedLabel) {
+      showUnsupportedStream(stream, blockedLabel);
+      return;
+    }
+    watch.blocked = false;
     watch.following = false;
     $("watch-frame").hidden = true;
     $("watch-start").hidden = false;
@@ -900,6 +1019,7 @@
     var video = $("watch-video");
     var stream = watch.stream;
     if (!video || !stream) return;
+    if (watch.blocked) return;
     var retry = watch.failed;
     watch.started = true;
     watch.failed = false;
@@ -912,10 +1032,15 @@
     watchHint("التشغيل يتبع المضيف؛ الإيقاف والانتقال يصلك تلقائيًا.");
 
     function begin() {
+      try { video.preload = "auto"; } catch (error) { /* ignored */ }
       if (watch.attachedUrl !== stream.url || retry) {
         attachSource(video, stream);
       }
-      playVideo();
+      if (video.readyState >= 1) {
+        playVideo();
+      } else {
+        watchHint("يبدأ التشغيل بمجرد وصول بيانات الفيديو من المصدر…");
+      }
     }
 
     if (isHlsUrl(stream.url) && !hasNativeHls(video) && !window.Hls) {
@@ -1069,12 +1194,38 @@
     copyStreamUrl();
   }
 
-  function seekToParty() {
+  function restoreRate(video) {
+    if (!video) return;
+    if (video.playbackRate !== 1) {
+      try { video.playbackRate = 1; } catch (error) { /* ignored */ }
+    }
+  }
+
+  // Seeks only when the guest is really out of step. Everything smaller is
+  // absorbed by a small speed change, so the picture never stops to re-buffer.
+  function seekToParty(force) {
     var video = $("watch-video");
     if (!video || !watch.playback || video.readyState < 1) return;
+    if (video.seeking) return;
     var target = expectedPositionMs(watch.playback) / 1000;
     if (!isFinite(target) || target < 0) return;
-    if (Math.abs((video.currentTime || 0) - target) <= 2) return;
+    var drift = target - (video.currentTime || 0);
+    var distance = Math.abs(drift);
+    if (distance <= WATCH_RATE_TOLERANCE) {
+      restoreRate(video);
+      return;
+    }
+    if (!force && distance <= WATCH_HARD_SEEK_MS / 1000) {
+      var rate = 1 + Math.max(-0.18, Math.min(0.18, drift * 0.06));
+      try {
+        video.playbackRate = rate;
+      } catch (error) { /* the next tick tries again */ }
+      return;
+    }
+    var now = Date.now();
+    if (!force && watch.lastSeekAt && now - watch.lastSeekAt < WATCH_SEEK_COOLDOWN_MS) return;
+    watch.lastSeekAt = now;
+    restoreRate(video);
     try {
       markProgrammatic();
       video.currentTime = target;
@@ -1092,22 +1243,38 @@
     return Math.max(0, base + elapsed * rate);
   }
 
-  // Media events fire asynchronously, so the flag is cleared on a timer rather
-  // than right after the call: a pause or seek the page does itself must not be
-  // sent back to the party as if the guest had asked for it.
+  // Media events fire asynchronously, so the flag is cleared on a timer as well
+  // as on the next seeked event: a pause or seek the page does itself must not
+  // be sent back to the party as if the guest had asked for it.
   function markProgrammatic() {
     watch.applying = true;
     if (watch.applyTimer) window.clearTimeout(watch.applyTimer);
     watch.applyTimer = window.setTimeout(function () {
       watch.applying = false;
       watch.applyTimer = null;
-    }, 700);
+    }, 2000);
+  }
+
+  function clearProgrammatic() {
+    watch.applying = false;
+    if (watch.applyTimer) {
+      window.clearTimeout(watch.applyTimer);
+      watch.applyTimer = null;
+    }
+  }
+
+  // Only a deliberate touch, tap or keypress on the player may move the party.
+  // Everything else is the page following the host, and sending it back would
+  // drag the whole party to the guest's lagging position.
+  function userInitiated() {
+    return Date.now() - (watch.userAt || 0) < 2500;
   }
 
   // A guest controls the party the way the host does: the action is broadcast on
   // the party channel and the host's app applies it for everyone. The host can
   // still lock control to themselves, and then the page only says so.
   function publishControl(paused, positionMs) {
+    if (watch.applying) return;
     var channel = watch.channel;
     var snapshot = state.snapshot;
     if (!channel || !snapshot || !snapshot.party) return;
@@ -1144,7 +1311,7 @@
         markProgrammatic();
         try { video.pause(); } catch (error) { /* ignored */ }
       }
-      seekToParty();
+      seekToParty(true);
       return;
     }
     if (video.paused) {
@@ -1181,14 +1348,15 @@
     watch.following = false;
     $("watch-frame").hidden = true;
     $("watch-start").hidden = true;
-    $("watch-open-url").hidden = false;
+    $("watch-open-url").hidden = true;
     $("watch-options").hidden = false;
+    $("watch-options-panel").hidden = false;
     $("watch-retry").hidden = false;
     $("watch-open-app").hidden = false;
     watchState("تعذّر التشغيل");
     watchHint(
       "المتصفح لا يستطيع تشغيل صيغة هذا البث (غالبًا MKV أو H.265). " +
-      "افتح الرابط في مشغّل خارجي، أو افتح الحفلة في تطبيق RAIF لمشاهدتها مع البقية."
+      "افتح البث في تطبيق RAIF ليُشغَّل بمشغّل MPV داخل الحفلة، أو في VLC أو Infuse."
     );
   }
 
@@ -1216,6 +1384,7 @@
 
   function renderRoom() {
     var snapshot = state.snapshot;
+    if (!snapshot || !snapshot.party) return;
     var party = snapshot.party;
     var members = snapshot.members || [];
     var media = party.media || {};
@@ -1243,7 +1412,8 @@
       var isSelf = member.id === snapshot.member_id;
       label.textContent = (member.display_name || "مشارك")
         + (isHost ? " · المضيف" : "")
-        + (isSelf ? " (أنت)" : "");
+        + (isSelf ? " (أنت)" : "")
+        + (voice.members[member.id] ? " · صوت" : "");
       row.appendChild(avatar);
       row.appendChild(label);
       list.appendChild(row);
@@ -1251,8 +1421,44 @@
   }
 
   // ------------------------------------------------------------------- chat
+  var chatToastTimer = null;
+
+  // A quiet banner for a message from someone else, so a guest who is busy
+  // with the video still notices the chat. It never steals the focus from the
+  // message field, and it leaves on its own after a few seconds.
+  function showChatToast(message) {
+    if (!message || !message.body || message.mine) return;
+    var input = $("chat-input");
+    if (input && document.activeElement === input) return;
+    var toast = $("chat-toast");
+    if (!toast) return;
+    toast.textContent = (message.name || "مشارك") + ": " + String(message.body).slice(0, 120);
+    toast.hidden = false;
+    if (chatToastTimer) window.clearTimeout(chatToastTimer);
+    chatToastTimer = window.setTimeout(function () {
+      toast.hidden = true;
+      chatToastTimer = null;
+    }, 4500);
+  }
+
+  function lastMessageId() {
+    var list = state.messages || [];
+    var last = list.length ? list[list.length - 1] : null;
+    return last && last.id != null ? Number(last.id) : null;
+  }
+
+  var lastRenderedChat = "";
+
   function renderMessages(messages) {
     var container = $("chat");
+    if (!container) return;
+    // The poll returns the whole thread every time; rebuilding identical
+    // markup while the video plays costs frames for nothing.
+    var signature = messages.length
+      ? messages.length + ":" + messages[messages.length - 1].id
+      : "empty";
+    if (container.childElementCount > 0 && signature === lastRenderedChat) return;
+    lastRenderedChat = signature;
     container.textContent = "";
     if (!messages.length) {
       var empty = document.createElement("div");
@@ -1316,12 +1522,15 @@
     }
     payload.mine = payload.member_id === snapshot.member_id;
     renderMessages(mergeMessages([payload]));
+    showChatToast(payload);
   }
 
   function loadMessages() {
     if (!state.joined) return;
     var party = state.snapshot && state.snapshot.party;
     if (!party) return;
+    var previousMax = lastMessageId();
+    var selfId = (state.snapshot && state.snapshot.member_id) || "";
     rpc("watch_party_list_messages", {
       p_party_id: party.id,
       p_device_id: state.deviceId,
@@ -1329,7 +1538,15 @@
     }).then(function (result) {
       if (!result) return;
       if (result.error) { endWith(result.error); return; }
-      renderMessages(mergeMessages(result.messages || []));
+      var ordered = mergeMessages(result.messages || []);
+      renderMessages(ordered);
+      if (previousMax == null) return;
+      var latest = null;
+      ordered.forEach(function (message) {
+        if (message.id == null) return;
+        if (Number(message.id) > previousMax && message.member_id !== selfId) latest = message;
+      });
+      if (latest) showChatToast(latest);
     }).catch(function () { /* silent */ });
   }
 
@@ -1363,6 +1580,340 @@
     }).catch(function () { input.value = body; });
   }
 
+  // ----------------------------------------------------------------- voice
+  // An opt-in voice room for the guests of this page. It is off until a guest
+  // taps join, it uses its own broadcast events, and it never touches the
+  // playback sync: a stalling voice connection cannot play, pause or seek the
+  // video. Only guests on this page can hear each other today; members of the
+  // RAIF app are not part of the voice room yet.
+  var VOICE_ICE = [{ urls: "stun:stun.l.google.com:19302" }];
+  var voice = {
+    joined: false,
+    busy: false,
+    muted: false,
+    localStream: null,
+    peers: {},
+    members: {}
+  };
+
+  // Why the microphone cannot be opened, so the page can say it plainly
+  // instead of only disabling the button.
+  function voiceBlockedReason() {
+    if (!window.RTCPeerConnection) return "webrtc";
+    if (!window.isSecureContext) return "insecure";
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return "media";
+    return "";
+  }
+
+  function voiceSupported() {
+    return voiceBlockedReason() === "";
+  }
+
+  function requestMic() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      return navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    }
+    var legacy = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    if (!legacy) return Promise.reject(new Error("unsupported"));
+    return new Promise(function (resolve, reject) {
+      legacy.call(navigator, { audio: true }, resolve, reject);
+    });
+  }
+
+  function micErrorMessage(error) {
+    var name = (error && error.name) || "";
+    if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+      return "لم يُسمح للمتصفح بالميكروفون. اسمح به من إعدادات الموقع ثم أعد المحاولة؛ الفيديو والمزامنة لم يتأثرا.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError" || name === "OverconstrainedError") {
+      return "لا يوجد ميكروفون متاح على هذا الجهاز. الفيديو يعمل كما هو، ويمكنك متابعة الحفلة والكتابة في الدردشة.";
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return "الميكروفون مستخدم من تطبيق أو مكالمة أخرى. أغلقه ثم أعد المحاولة؛ الفيديو والمزامنة لم يتأثرا.";
+    }
+    if (name === "unsupported") {
+      return "هذا المتصفح لا يوفر مكالمات صوتية داخل الصفحة؛ الفيديو يعمل كما هو.";
+    }
+    return "تعذّر الوصول إلى الميكروفون. الصوت مطفأ والفيديو لم يتأثر.";
+  }
+
+  function voiceSelfId() {
+    var snapshot = state.snapshot;
+    return (snapshot && snapshot.member_id) || state.deviceId;
+  }
+
+  function voiceSelfName() {
+    var snapshot = state.snapshot;
+    var members = (snapshot && snapshot.members) || [];
+    var selfId = voiceSelfId();
+    var member = members.filter(function (item) { return item.id === selfId; })[0];
+    return (member && member.display_name) || state.name || "مشارك";
+  }
+
+  function voiceSend(event, payload) {
+    var channel = watch.channel;
+    if (!channel) return false;
+    try {
+      var result = channel.send({ type: "broadcast", event: event, payload: payload });
+      if (result && result.catch) result.catch(function () { /* the page keeps the local state */ });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function voiceSignal(peerId, payload) {
+    voiceSend("voice_signal", {
+      member_id: voiceSelfId(),
+      to: peerId,
+      kind: payload.kind,
+      sdp: payload.sdp || null,
+      candidate: payload.candidate || null
+    });
+  }
+
+  function renderVoice() {
+    var label = $("voice-state");
+    var hint = $("voice-hint");
+    var list = $("voice-members");
+    if (!label || !hint || !list) return;
+    var ids = Object.keys(voice.members);
+    label.textContent = voice.joined ? (voice.muted ? "مكتوم" : "متصل") : "مطفأ";
+    $("voice-join").hidden = voice.joined;
+    $("voice-mic").hidden = !voice.joined;
+    $("voice-leave").hidden = !voice.joined;
+    $("voice-mic").textContent = voice.muted ? "تشغيل الميكروفون" : "كتم الميكروفون";
+    if (!voice.joined) {
+      var blocked = voiceBlockedReason();
+      $("voice-join").disabled = !!blocked;
+      hint.textContent = !blocked
+        ? "الصوت مطفأ افتراضيًا، ولكل مشارك أن ينضم أو لا. تعطيله أو فشله لا يمسّ الفيديو ولا المزامنة."
+        : blocked === "insecure"
+          ? "الميكروفون يعمل فقط عبر اتصال آمن (https). افتح صفحة الحفلة من رابط https، ويبقى الفيديو يعمل هنا كما هو."
+          : blocked === "webrtc"
+            ? "هذا المتصفح لا يدعم مكالمات الصوت داخل الصفحة؛ الفيديو يعمل كما هو."
+            : "هذا المتصفح لا يمنح الصفحة إذن الميكروفون؛ الفيديو يعمل كما هو.";
+    }
+    list.textContent = "";
+    list.hidden = ids.length === 0;
+    ids.forEach(function (id) {
+      var item = voice.members[id] || {};
+      var row = document.createElement("div");
+      row.className = "member";
+      var avatar = document.createElement("span");
+      avatar.className = "avatar";
+      avatar.textContent = (item.name || "?").trim().charAt(0);
+      var text = document.createElement("span");
+      text.textContent = (item.name || "مشارك")
+        + (id === voiceSelfId() ? " (أنت)" : "")
+        + (item.muted ? " · مكتوم" : "");
+      row.appendChild(avatar);
+      row.appendChild(text);
+      list.appendChild(row);
+    });
+  }
+
+  function stopVoicePeer(peerId) {
+    var peer = voice.peers[peerId];
+    if (!peer) return;
+    try { peer.pc.close(); } catch (error) { /* already closed */ }
+    if (peer.audio && peer.audio.parentNode) peer.audio.parentNode.removeChild(peer.audio);
+    delete voice.peers[peerId];
+  }
+
+  function flushVoiceCandidates(peer) {
+    if (!peer || !peer.pending) return;
+    var pending = peer.pending;
+    peer.pending = [];
+    peer.ready = true;
+    pending.forEach(function (candidate) {
+      try { peer.pc.addIceCandidate(new window.RTCIceCandidate(candidate)).catch(function () {}); } catch (error) { /* ignored */ }
+    });
+  }
+
+  function resetVoice() {
+    Object.keys(voice.peers).forEach(stopVoicePeer);
+    if (voice.localStream) {
+      voice.localStream.getTracks().forEach(function (track) {
+        try { track.stop(); } catch (error) { /* already stopped */ }
+      });
+      voice.localStream = null;
+    }
+    voice.joined = false;
+    voice.busy = false;
+    voice.muted = false;
+    voice.members = {};
+  }
+
+  function voiceOfferFor(peerId) {
+    var peer = voice.peers[peerId];
+    if (!peer) return;
+    peer.pc.createOffer().then(function (offer) {
+      return peer.pc.setLocalDescription(offer).then(function () {
+        voiceSignal(peerId, { kind: "offer", sdp: offer });
+      });
+    }).catch(function () {
+      stopVoicePeer(peerId);
+    });
+  }
+
+  function ensureVoicePeer(peerId) {
+    if (!voice.joined || !voice.localStream) return;
+    if (!peerId || peerId === voiceSelfId()) return;
+    if (voice.peers[peerId]) return;
+    var pc = new window.RTCPeerConnection({ iceServers: VOICE_ICE });
+    var peer = { pc: pc, audio: null, pending: [], ready: false };
+    voice.peers[peerId] = peer;
+    peer.audio = document.createElement("audio");
+    peer.audio.autoplay = true;
+    peer.audio.setAttribute("playsinline", "");
+    peer.audio.hidden = true;
+    document.body.appendChild(peer.audio);
+    pc.ontrack = function (event) {
+      var stream = event.streams && event.streams[0];
+      if (!stream) return;
+      try { peer.audio.srcObject = stream; } catch (error) { /* the element keeps the track we ignore */ }
+      var play = peer.audio.play();
+      if (play && play.catch) play.catch(function () { /* the guest can tap the page to allow sound */ });
+    };
+    pc.onicecandidate = function (event) {
+      if (!event.candidate) return;
+      voiceSignal(peerId, { kind: "candidate", candidate: event.candidate });
+    };
+    voice.localStream.getTracks().forEach(function (track) {
+      try { pc.addTrack(track, voice.localStream); } catch (error) { /* older browser */ }
+    });
+    if (voiceSelfId() < peerId) voiceOfferFor(peerId);
+  }
+
+  function receiveVoice(message) {
+    var payload = (message && message.payload) || {};
+    var from = payload.member_id;
+    if (!from || from === voiceSelfId()) return;
+    if (payload.state === "leave") {
+      stopVoicePeer(from);
+      delete voice.members[from];
+      renderVoice();
+      renderRoom();
+      return;
+    }
+    voice.members[from] = { name: payload.name || "مشارك", muted: !!payload.muted };
+    renderVoice();
+    if (!voice.joined) return;
+    if (payload.state === "join") {
+      voiceSend("voice", {
+        member_id: voiceSelfId(),
+        name: voiceSelfName(),
+        muted: voice.muted,
+        state: "hello"
+      });
+    }
+    ensureVoicePeer(from);
+  }
+
+  function receiveVoiceSignal(message) {
+    var payload = (message && message.payload) || {};
+    var from = payload.member_id;
+    if (!voice.joined || !voice.localStream) return;
+    if (!from || from === voiceSelfId()) return;
+    if (payload.to && payload.to !== voiceSelfId()) return;
+    ensureVoicePeer(from);
+    var peer = voice.peers[from];
+    if (!peer) return;
+    if (payload.kind === "offer" && payload.sdp) {
+      peer.pc.setRemoteDescription(new window.RTCSessionDescription(payload.sdp))
+        .then(function () { return peer.pc.createAnswer(); })
+        .then(function (answer) {
+          return peer.pc.setLocalDescription(answer).then(function () {
+            voiceSignal(from, { kind: "answer", sdp: answer });
+            flushVoiceCandidates(peer);
+          });
+        })
+        .catch(function () { stopVoicePeer(from); });
+      return;
+    }
+    if (payload.kind === "answer" && payload.sdp) {
+      peer.pc.setRemoteDescription(new window.RTCSessionDescription(payload.sdp))
+        .then(function () { flushVoiceCandidates(peer); })
+        .catch(function () { stopVoicePeer(from); });
+      return;
+    }
+    if (payload.kind === "candidate" && payload.candidate) {
+      if (peer.ready) {
+        try { peer.pc.addIceCandidate(new window.RTCIceCandidate(payload.candidate)).catch(function () {}); } catch (error) { /* ignored */ }
+      } else {
+        peer.pending.push(payload.candidate);
+      }
+    }
+  }
+
+  function joinVoice() {
+    if (voice.joined || voice.busy) return;
+    if (!voiceSupported()) {
+      renderVoice();
+      return;
+    }
+    if (!watch.channel) {
+      $("voice-hint").textContent = "انتظر الاتصال بالحفلة ثم أعد المحاولة؛ الصوت لم يتغيّر والفيديو كما هو.";
+      return;
+    }
+    voice.busy = true;
+    $("voice-join").disabled = true;
+    $("voice-hint").textContent = "جارٍ طلب إذن الميكروفون…";
+    requestMic().then(function (stream) {
+      voice.busy = false;
+      voice.joined = true;
+      voice.muted = false;
+      voice.localStream = stream;
+      voice.members[voiceSelfId()] = { name: voiceSelfName(), muted: false };
+      var announced = voiceSend("voice", {
+        member_id: voiceSelfId(),
+        name: voiceSelfName(),
+        muted: false,
+        state: "join"
+      });
+      renderVoice();
+      renderRoom();
+      $("voice-hint").textContent = announced
+        ? "أنت في الصوت. تعطيل الصوت أو تعليقه لا يوقف الفيديو ولا يغيّر المزامنة."
+        : "الميكروفون يعمل عندك، لكن تعذّر إبلاغ الحفلة. تحقق من الاتصال ثم اخرج من الصوت وانضم مرة أخرى.";
+    }).catch(function (error) {
+      voice.busy = false;
+      resetVoice();
+      renderVoice();
+      $("voice-hint").textContent = micErrorMessage(error);
+    });
+  }
+
+  function leaveVoice(announce) {
+    if (announce && voice.joined) {
+      voiceSend("voice", {
+        member_id: voiceSelfId(),
+        name: voiceSelfName(),
+        muted: false,
+        state: "leave"
+      });
+    }
+    resetVoice();
+    renderVoice();
+    renderRoom();
+  }
+
+  function toggleVoiceMic() {
+    if (!voice.joined || !voice.localStream) return;
+    voice.muted = !voice.muted;
+    voice.localStream.getAudioTracks().forEach(function (track) { track.enabled = !voice.muted; });
+    voice.members[voiceSelfId()] = { name: voiceSelfName(), muted: voice.muted };
+    voiceSend("voice", {
+      member_id: voiceSelfId(),
+      name: voiceSelfName(),
+      muted: voice.muted,
+      state: "mute"
+    });
+    renderVoice();
+    renderRoom();
+  }
+
   // -------------------------------------------------------------- heartbeat
   function startPolling() {
     stopTimers();
@@ -1387,8 +1938,11 @@
 
   function tickMessages() {
     if (!state.alive || !state.joined) return;
-    loadMessages();
-    state.messagesTimer = window.setTimeout(tickMessages, MESSAGES_MS);
+    // While the page sits in another app the thread is not fetched; it catches
+    // up the moment the guest comes back, which keeps the phone quiet.
+    var hidden = typeof document !== "undefined" && document.hidden;
+    if (!hidden) loadMessages();
+    state.messagesTimer = window.setTimeout(tickMessages, hidden ? 6000 : MESSAGES_MS);
   }
 
   // ------------------------------------------------------------------ leave
@@ -1489,6 +2043,18 @@
     $("chat-input").addEventListener("keydown", function (event) {
       if (event.key === "Enter") sendMessage();
     });
+    var chatToast = $("chat-toast");
+    if (chatToast) {
+      chatToast.addEventListener("click", function () {
+        chatToast.hidden = true;
+        if (chatToastTimer) {
+          window.clearTimeout(chatToastTimer);
+          chatToastTimer = null;
+        }
+        var chat = $("chat");
+        if (chat && chat.scrollIntoView) chat.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
     $("open-app").addEventListener("click", openInApp);
     $("watch-start").addEventListener("click", startWatching);
     $("watch-retry").addEventListener("click", startWatching);
@@ -1509,24 +2075,43 @@
     $("watch-copy").addEventListener("click", copyStreamUrl);
     $("watch-share").addEventListener("click", shareStreamUrl);
     $("watch-open-app").addEventListener("click", openInApp);
+    $("voice-join").addEventListener("click", joinVoice);
+    $("voice-mic").addEventListener("click", toggleVoiceMic);
+    $("voice-leave").addEventListener("click", function () { leaveVoice(true); });
+    renderVoice();
     var video = $("watch-video");
     if (video) {
+      // A touch, tap or key on the player marks the action as the guest's own;
+      // only those are sent back to the party as playback control.
+      var gestureTargets = [$("watch-frame"), video];
+      ["pointerdown", "touchstart", "touchend", "click", "keydown"].forEach(function (name) {
+        gestureTargets.forEach(function (target) {
+          if (!target) return;
+          target.addEventListener(name, function () {
+            watch.userAt = Date.now();
+          }, { passive: true });
+        });
+      });
       video.addEventListener("loadedmetadata", function () {
-        seekToParty();
+        seekToParty(true);
         if (watch.started && watch.playback && !watch.playback.paused) playVideo();
       });
       video.addEventListener("play", function () {
+        if (watch.applying || !userInitiated()) return;
         watch.following = true;
-        if (watch.applying) return;
         publishControl(false, video.currentTime);
       });
       video.addEventListener("pause", function () {
-        if (watch.applying) return;
+        if (watch.applying || video.ended || !userInitiated()) return;
         watch.following = false;
         publishControl(true, video.currentTime);
       });
       video.addEventListener("seeked", function () {
-        if (watch.applying) return;
+        if (watch.applying) {
+          clearProgrammatic();
+          return;
+        }
+        if (!userInitiated()) return;
         publishControl(!!video.paused, video.currentTime);
       });
       video.addEventListener("error", function () {
@@ -1536,6 +2121,10 @@
     }
     $("leave").addEventListener("click", function () { leave(false); });
     $("message-back").addEventListener("click", backToEntry);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden || !state.joined) return;
+      loadMessages();
+    });
     window.addEventListener("pagehide", function () { leave(true); });
     window.addEventListener("beforeunload", function () { leave(true); });
   }
