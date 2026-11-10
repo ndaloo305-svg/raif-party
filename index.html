@@ -258,7 +258,7 @@
 <body>
 <div class="halo"></div>
 <main>
-  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v4</span></div>
+  <div class="brand"><span class="dot"></span>RAIF · حفلة مشاهدة<span class="version">v5</span></div>
 
   <!-- Entry: no code in the URL -->
   <section id="screen-entry" hidden>
@@ -385,7 +385,7 @@
   var ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   var CODE_LENGTH = 6;
   var HEARTBEAT_MS = 4000;
-  var MESSAGES_MS = 3000;
+  var MESSAGES_MS = 1500;
   var DEVICE_KEY = "raif_party_device";
   var NAME_KEY = "raif_party_name";
   var SUPABASE_LIBRARIES = [
@@ -393,7 +393,7 @@
     "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
   ];
   var WATCH_REQUEST_MS = 12000;
-  var WATCH_SYNC_MS = 3000;
+  var WATCH_SYNC_MS = 1000;
   var HLS_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js",
     "https://unpkg.com/hls.js@1/dist/hls.min.js"
@@ -410,6 +410,8 @@
     snapshot: null,
     joined: false,
     lastMessageId: 0,
+    messages: [],
+    serverOffset: 0,
     heartbeatTimer: null,
     messagesTimer: null,
     alive: true
@@ -429,6 +431,7 @@
     failed: false,
     following: false,
     applying: false,
+    applyTimer: null,
     hls: null,
     attachedUrl: "",
     timer: null,
@@ -607,6 +610,7 @@
       if (!snapshot.party) throw new Error("empty");
       state.joined = true;
       state.lastMessageId = 0;
+      state.messages = [];
       applySnapshot(snapshot);
       startWatch();
       show("screen-room");
@@ -707,6 +711,7 @@
         });
         channel.on("broadcast", { event: "stream" }, receiveStream);
         channel.on("broadcast", { event: "state" }, receivePlayback);
+        channel.on("broadcast", { event: "chat" }, receiveChat);
         channel.on("broadcast", { event: "ended" }, function () { endWith("party_ended"); });
         channel.subscribe(function (status) {
           if (status === "SUBSCRIBED") {
@@ -943,6 +948,7 @@
     var video = $("watch-video");
     if (!video || !watch.stream) return;
     seekToParty();
+    markProgrammatic();
     var promise = video.play();
     if (promise && promise.catch) {
       promise.catch(function () {
@@ -1069,7 +1075,10 @@
     var target = expectedPositionMs(watch.playback) / 1000;
     if (!isFinite(target) || target < 0) return;
     if (Math.abs((video.currentTime || 0) - target) <= 2) return;
-    try { video.currentTime = target; } catch (error) { /* ignored */ }
+    try {
+      markProgrammatic();
+      video.currentTime = target;
+    } catch (error) { /* ignored */ }
   }
 
   function expectedPositionMs(playback) {
@@ -1078,8 +1087,51 @@
     if (playback.paused) return Math.max(0, base);
     var rate = Number(playback.rate) || 1;
     var at = Number(playback.at) || 0;
-    var elapsed = at > 0 ? Math.max(0, Date.now() - at) : 0;
+    var now = Date.now() + (state.serverOffset || 0);
+    var elapsed = at > 0 ? Math.max(0, now - at) : 0;
     return Math.max(0, base + elapsed * rate);
+  }
+
+  // Media events fire asynchronously, so the flag is cleared on a timer rather
+  // than right after the call: a pause or seek the page does itself must not be
+  // sent back to the party as if the guest had asked for it.
+  function markProgrammatic() {
+    watch.applying = true;
+    if (watch.applyTimer) window.clearTimeout(watch.applyTimer);
+    watch.applyTimer = window.setTimeout(function () {
+      watch.applying = false;
+      watch.applyTimer = null;
+    }, 700);
+  }
+
+  // A guest controls the party the way the host does: the action is broadcast on
+  // the party channel and the host's app applies it for everyone. The host can
+  // still lock control to themselves, and then the page only says so.
+  function publishControl(paused, positionMs) {
+    var channel = watch.channel;
+    var snapshot = state.snapshot;
+    if (!channel || !snapshot || !snapshot.party) return;
+    if (!watch.stream || !watch.mediaKey) return;
+    var party = snapshot.party;
+    var selfId = snapshot.member_id || state.deviceId;
+    if (party.host_only && party.host_member_id && selfId !== party.host_member_id) {
+      watchHint("المضيف فقط يمكنه التحكم في التشغيل الآن.");
+      watch.following = true;
+      return;
+    }
+    var payload = {
+      seq: Date.now(),
+      member_id: selfId,
+      paused: !!paused,
+      position_ms: Math.max(0, Math.round((Number(positionMs) || 0) * 1000)),
+      rate: 1,
+      at: Date.now() + (state.serverOffset || 0),
+      media_key: watch.mediaKey
+    };
+    try {
+      channel.send({ type: "broadcast", event: "state", payload: payload });
+      watchHint("التحكم يصل إلى الحفلة الآن.");
+    } catch (error) { /* the next tick re-syncs the page */ }
   }
 
   function syncVideo() {
@@ -1089,9 +1141,8 @@
     if (video.readyState < 1) return;
     if (playback.paused) {
       if (!video.paused) {
-        watch.applying = true;
+        markProgrammatic();
         try { video.pause(); } catch (error) { /* ignored */ }
-        watch.applying = false;
       }
       seekToParty();
       return;
@@ -1148,6 +1199,9 @@
       return;
     }
     if (!snapshot.party) return;
+    if (typeof snapshot.server_time_ms === "number") {
+      state.serverOffset = snapshot.server_time_ms - Date.now();
+    }
     state.snapshot = snapshot;
     renderRoom();
     syncWatchMedia(snapshot.party.media);
@@ -1233,6 +1287,37 @@
 
   function pad(value) { return (value < 10 ? "0" : "") + value; }
 
+  // Messages arrive twice: fetched in full on the poll, and one at a time over
+  // the channel. Both go through this merge so a message shows up the instant
+  // it is broadcast and is never printed twice.
+  function mergeMessages(incoming) {
+    var byId = {};
+    (state.messages || []).forEach(function (message) {
+      if (message && message.id != null) byId[message.id] = message;
+    });
+    (incoming || []).forEach(function (message) {
+      if (!message || message.id == null) return;
+      byId[message.id] = message;
+    });
+    state.messages = Object.keys(byId)
+      .map(function (key) { return byId[key]; })
+      .sort(function (a, b) { return Number(a.id) - Number(b.id); })
+      .slice(-200);
+    return state.messages;
+  }
+
+  function receiveChat(message) {
+    var snapshot = state.snapshot;
+    var payload = (message && message.payload) || {};
+    if (!snapshot) return;
+    if (!payload.body || payload.id == null) {
+      loadMessages();
+      return;
+    }
+    payload.mine = payload.member_id === snapshot.member_id;
+    renderMessages(mergeMessages([payload]));
+  }
+
   function loadMessages() {
     if (!state.joined) return;
     var party = state.snapshot && state.snapshot.party;
@@ -1244,7 +1329,7 @@
     }).then(function (result) {
       if (!result) return;
       if (result.error) { endWith(result.error); return; }
-      renderMessages(result.messages || []);
+      renderMessages(mergeMessages(result.messages || []));
     }).catch(function () { /* silent */ });
   }
 
@@ -1264,6 +1349,15 @@
       if (result && result.error) {
         input.value = body;
         return;
+      }
+      if (result && result.message && watch.channel) {
+        if (result.message.id != null) {
+          result.message.mine = true;
+          renderMessages(mergeMessages([result.message]));
+        }
+        try {
+          watch.channel.send({ type: "broadcast", event: "chat", payload: result.message });
+        } catch (error) { /* the poll below still delivers it */ }
       }
       loadMessages();
     }).catch(function () { input.value = body; });
@@ -1319,6 +1413,7 @@
   function leave(silent) {
     var party = state.snapshot && state.snapshot.party;
     state.joined = false;
+    state.messages = [];
     stopTimers();
     stopChannel();
     if (party) leaveRequest(party.id, silent);
@@ -1420,9 +1515,19 @@
         seekToParty();
         if (watch.started && watch.playback && !watch.playback.paused) playVideo();
       });
-      video.addEventListener("play", function () { watch.following = true; });
+      video.addEventListener("play", function () {
+        watch.following = true;
+        if (watch.applying) return;
+        publishControl(false, video.currentTime);
+      });
       video.addEventListener("pause", function () {
-        if (!watch.applying) watch.following = false;
+        if (watch.applying) return;
+        watch.following = false;
+        publishControl(true, video.currentTime);
+      });
+      video.addEventListener("seeked", function () {
+        if (watch.applying) return;
+        publishControl(!!video.paused, video.currentTime);
       });
       video.addEventListener("error", function () {
         if (!watch.started || !watch.stream) return;
