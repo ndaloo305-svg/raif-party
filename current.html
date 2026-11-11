@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAIF — التصميم الحالي كما هو</title>
+<style>
+  :root {
+    --bg: #0B0D10;
+    --surface: #14171B;
+    --card: #1A1E23;
+    --copper: #D69A5E;
+    --copper-dim: #8F6337;
+    --text: #F5F7F8;
+    --muted: #B8BEC5;
+    --faint: #969CA3;
+    --line: #252A2A;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #06070A;
+    color: var(--text);
+    font-family: "Noto Sans Arabic", "SF Arabic", -apple-system, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 8mm;
+    padding: 18mm 16mm;
+    background: var(--bg);
+    position: relative;
+    page-break-after: always;
+    break-after: page;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  h1 { font-size: 30pt; margin: 0 0 5mm; letter-spacing: -0.5pt; }
+  h2 { font-size: 16pt; margin: 0 0 3mm; color: var(--copper); font-weight: 600; }
+  h3 { font-size: 11.5pt; margin: 6mm 0 2mm; font-weight: 600; }
+  p, li { font-size: 10.5pt; line-height: 1.75; color: var(--muted); }
+  .kicker { font-size: 9pt; letter-spacing: 2pt; color: var(--faint); }
+  .rule { height: 1px; background: var(--line); margin: 6mm 0; border: 0; }
+
+  .cover { display: flex; flex-direction: column; justify-content: center; height: 261mm; }
+  .mark .r { font-size: 84pt; color: var(--copper); font-weight: 700; line-height: 0.9; }
+  .mark .name { font-size: 36pt; font-weight: 700; letter-spacing: -0.5pt; }
+  .cover-sub { font-size: 12pt; color: var(--muted); margin-top: 4mm; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 3mm; margin: 3mm 0 0; }
+  .sw { width: 30mm; }
+  .sw .chip { height: 16mm; border-radius: 3mm; border: 1px solid rgba(255,255,255,0.08); }
+  .sw .hex { font-size: 8pt; color: var(--faint); margin-top: 1.5mm; direction: ltr; text-align: right; }
+  .sw .lbl { font-size: 9pt; color: var(--muted); }
+
+  .two { display: flex; gap: 10mm; align-items: flex-start; }
+  .two > div { flex: 1; }
+  .phones { display: flex; gap: 10mm; align-items: flex-start; flex-wrap: wrap; }
+  .phone-wrap { text-align: center; }
+  .cap { font-size: 9pt; color: var(--faint); margin-top: 3mm; }
+
+  ul { margin: 0; padding-inline-start: 5mm; }
+  li { margin-bottom: 1.6mm; }
+  .badge { display: inline-block; font-size: 8.5pt; padding: 1mm 3mm; border-radius: 99px; border: 1px solid var(--copper-dim); color: var(--copper); }
+
+  .inv { border: 1px solid var(--line); border-radius: 4mm; padding: 4mm 5mm; margin-bottom: 3mm; }
+  .inv b { color: var(--text); font-size: 10.5pt; }
+  .inv p { margin: 1mm 0 0; font-size: 9.5pt; }
+
+  a { color: var(--copper); text-decoration: none; }
+  @media print { html, body { background: #fff; } .page { margin: 0; box-shadow: none; } }
+  @media screen { .page { box-shadow: 0 0 0 1px #1E2329; } }
+</style>
+</head>
+<body>
+
+<!-- ============ الغلاف ============ -->
+<section class="page">
+  <div class="cover">
+    <div class="kicker">RAIF · وثيقة مرجعية</div>
+    <div style="margin-top:6mm">
+      <span class="mark" style="display:flex; align-items:baseline; gap:4mm">
+        <span class="r">R</span><span class="name">RAIF</span>
+      </span>
+    </div>
+    <div class="cover-sub">التصميم الحالي كما هو — بالكامل</div>
+    <div class="cover-sub" style="color:var(--copper)">الأيقونة · الواجهة · الكتالوجات · المشغّل · كل الشاشات</div>
+    <hr class="rule" style="margin-top:16mm">
+    <p style="max-width:150mm">
+      هذه الوثيقة تصوّر التطبيق كما هو الآن بدقة: كل لون مأخوذ من ملفات الثيم في الكود،
+      وكل رسم للشاشات مطابق لبنيتها الفعلية. تستخدم كمرجع للمقارنة مع التصاميم المقترحة.
+    </p>
+    <p style="margin-top:8mm; color:var(--copper); font-size:11pt">
+      الاتجاهات الخمسة المقترحة الجديدة في صفحة منفصلة: <a href="designs-v3.html">designs-v3.html</a>
+    </p>
+  </div>
+</section>
+
+<!-- ============ الهوية ============ -->
+<section class="page">
+  <div class="kicker">01 · الهوية</div>
+  <h1 style="font-size:24pt">الهوية الحالية</h1>
+  <p>فحمي قريب من الأسود مع نحاسي واحد. لا تدرّجات في الهيكل، والنحاسي محجوز للإجراء الأساسي وشريط التقدّم والتبويب النشط فقط.</p>
+
+  <h3>الألوان — من ThemeColors.Raif</h3>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#0B0D10"></div><div class="lbl">الخلفية</div><div class="hex">#0B0D10</div></div>
+    <div class="sw"><div class="chip" style="background:#14171B"></div><div class="lbl">سطح</div><div class="hex">#14171B</div></div>
+    <div class="sw"><div class="chip" style="background:#1A1E23"></div><div class="lbl">بطاقة</div><div class="hex">#1A1E23</div></div>
+    <div class="sw"><div class="chip" style="background:#D69A5E"></div><div class="lbl">الأكسنت</div><div class="hex">#D69A5E</div></div>
+    <div class="sw"><div class="chip" style="background:#8F6337"></div><div class="lbl">أكسنت غامق</div><div class="hex">#8F6337</div></div>
+    <div class="sw"><div class="chip" style="background:#2A211A"></div><div class="lbl">خلفية التركيز</div><div class="hex">#2A211A</div></div>
+    <div class="sw"><div class="chip" style="background:#F5F7F8"></div><div class="lbl">نص أساسي</div><div class="hex">#F5F7F8</div></div>
+    <div class="sw"><div class="chip" style="background:#B8BEC5"></div><div class="lbl">نص ثانوي</div><div class="hex">#B8BEC5</div></div>
+    <div class="sw"><div class="chip" style="background:#252A2A"></div><div class="lbl">حدود</div><div class="hex">#252A2A</div></div>
+  </div>
+
+  <hr class="rule">
+  <div class="two">
+    <div>
+      <h3>الخطوط</h3>
+      <p><span style="color:var(--text); font-size:14pt; font-weight:700">RAIF Display</span><br>
+      للعناوين وعرض الصفحات · ثلاثة أوزان · يحمل العربية واللاتينية بشخصية واحدة</p>
+      <p><span style="color:var(--text); font-size:11pt">JetBrains Sans</span><br>
+      للنصوص والأزرار والتسميات · ثلاثة أوزان</p>
+      <h3>سلّم المقاسات</h3>
+      <p>تسميات 11–12 · نص 13–16 · عناوين 18–28 · عرض 32–48<br>
+      هوامش الشاشة 16 · بين الأقسام 24 · بين البطاقات 14 · حشوة البطاقة 18</p>
+    </div>
+    <div>
+      <h3>الحواف</h3>
+      <p>بطاقة 24 · ملصق 12 · ورقة سفلية 24 · نافذة 28 · زر 16 · شريحة دائرية كاملة · لوحة المشغّل 24</p>
+      <h3>الحركة</h3>
+      <p>سريعة 150 · عادية 220 · ورقة دخول 300 / خروج 250 · بطيئة 400 · سينمائية 700<br>
+      المنحنى (0.2, 0, 0, 1) لكل الحركات القياسية</p>
+      <h3>العتمات</h3>
+      <p>تحويم 8% · ضغط 12% · تحديد 15% · عتمة طبقة المشغّل 72% أسود</p>
+    </div>
+  </div>
+
+  <h3>نسخ لونية جاهزة يختارها المستخدم من الإعدادات</h3>
+  <p>RAIF (الافتراضية) · Gold · Jade · Rose Gold · Arctic Blue · Graphite · Crimson · Ocean · Violet · Emerald · Amber · Rose · White — إضافة إلى ثيم مخصّص يحدده المستخدم بنفسه، وخيار AMOLED أسود كامل.</p>
+</section>
+
+<!-- ============ الأيقونة ============ -->
+<section class="page">
+  <div class="kicker">02 · الأيقونة</div>
+  <h1 style="font-size:24pt">الأيقونة الحالية</h1>
+
+  <div class="two" style="margin-top:6mm">
+    <div>
+      <h3 style="margin-top:0">البنية</h3>
+      <ul>
+        <li>حرف <b style="color:var(--text)">R</b> نحاسي كبير في منتصف الساحة.</li>
+        <li>ساق الحرف تنحدر كالهلال المقوّس نحو اليسار الأسفل — حركة خطّية تمنح الحرف نبضًا.</li>
+        <li>داخل وعاء الحرف مثلث تشغيل باللون نفسه: الرسالة أن هذه المنصة للمشاهدة.</li>
+        <li>خلفية <b style="color:var(--text)">كحلية داكنة</b> #0A1128 تقريبًا.</li>
+        <li>لون الرمز برتقالي نحاسي مشعّ أفتح من أكسنت الواجهة (#E0913F مقابل #D69A5E).</li>
+      </ul>
+      <h3>ملاحظات</h3>
+      <ul>
+        <li><span class="badge">تعارض</span> خلفية الأيقونة كحلية بينما خلفية التطبيق فحمية — الأيقونة لا تُكمل التطبيق عند النظر إليهما معًا على الشاشة الرئيسية للهاتف.</li>
+        <li>يوجد 6 نسخ لونية بديلة للأيقونة يمكن تبديلها من الإعدادات (Arctic Blue · Copper · Emerald · Graphite · Rose Gold · Original).</li>
+        <li>الأيقونة 1024×1024 وتُصغَّر آليًا لكل المقاسات.</li>
+      </ul>
+    </div>
+    <div style="flex:0 0 66mm; text-align:center">
+      <svg width="66mm" height="66mm" viewBox="0 0 200 200" role="img" aria-label="أيقونة RAIF الحالية">
+        <rect width="200" height="200" rx="0" fill="#0A1128"/>
+        <!-- stem -->
+        <path d="M64 40 L82 40 L82 158 L64 158 Z" fill="#E0913F" transform="rotate(4 73 99)"/>
+        <!-- bowl -->
+        <path d="M78 40 h30 c28 0 46 15 46 38 0 17-9 29-24 35 L140 100 118 100 118 76 c0-8-6-12-14-12 L78 64 Z" fill="#E0913F"/>
+        <!-- crescent leg -->
+        <path d="M118 108 C 152 132, 148 178, 96 196 C 122 178, 130 152, 104 124 Z" fill="#E0913F"/>
+        <!-- play triangle inside bowl -->
+        <path d="M96 76 L124 92 L96 108 Z" fill="#0A1128" stroke="#E0913F" stroke-width="4" stroke-linejoin="round"/>
+      </svg>
+      <div class="cap">رسم تقريبي للأيقونة الفعلية — حرف R هلالي الساق بمثلث تشغيل</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ الرئيسية ============ -->
+<section class="page">
+  <div class="kicker">03 · الشاشة الرئيسية</div>
+  <h1 style="font-size:24pt">الرئيسية كما هي</h1>
+
+  <div class="two">
+    <div class="phone-wrap">
+      <svg width="76mm" height="157mm" viewBox="0 0 320 660" role="img" aria-label="الرئيسية الحالية">
+        <rect width="320" height="660" rx="26" fill="#0B0D10"/>
+        <defs>
+          <linearGradient id="heroA" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3A4A63"/><stop offset="0.55" stop-color="#1B2231"/><stop offset="1" stop-color="#0B0D10"/>
+          </linearGradient>
+          <linearGradient id="poster1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A3A2A"/><stop offset="1" stop-color="#1A1611"/></linearGradient>
+          <linearGradient id="poster2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A2A2A"/><stop offset="1" stop-color="#1B1010"/></linearGradient>
+          <linearGradient id="poster3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E4A3A"/><stop offset="1" stop-color="#101911"/></linearGradient>
+        </defs>
+        <rect width="320" height="300" fill="url(#heroA)"/>
+        <circle cx="250" cy="46" r="14" fill="#E8E2D4" opacity="0.75"/>
+        <text x="300" y="230" text-anchor="end" fill="#F5F7F8" font-size="30" font-weight="700">الظل الأخير</text>
+        <text x="300" y="252" text-anchor="end" fill="#B8BEC5" font-size="11">2025 · دراما · 8.4</text>
+        <rect x="182" y="266" width="118" height="26" rx="10" fill="#D69A5E"/>
+        <text x="241" y="283" text-anchor="middle" fill="#14171B" font-size="11" font-weight="700">تشغيل ▶</text>
+        <rect x="120" y="266" width="56" height="26" rx="10" fill="none" stroke="#3A4040"/>
+        <text x="148" y="283" text-anchor="middle" fill="#F5F7F8" font-size="10">التفاصيل</text>
+
+        <rect x="14" y="318" width="292" height="62" rx="16" fill="#1A1E23"/>
+        <rect x="232" y="330" width="62" height="38" rx="8" fill="url(#poster1)"/>
+        <text x="222" y="343" text-anchor="end" fill="#F5F7F8" font-size="12" font-weight="600">حفلة مع خالد</text>
+        <text x="222" y="359" text-anchor="end" fill="#969CA3" font-size="9">٣ مشاركين · المضيف يشاهد</text>
+        <rect x="24" y="334" width="70" height="26" rx="10" fill="#D69A5E"/>
+        <text x="59" y="351" text-anchor="middle" fill="#14171B" font-size="9" font-weight="700">شاهد معهم</text>
+
+        <text x="306" y="404" text-anchor="end" fill="#F5F7F8" font-size="13" font-weight="700">قيد المشاهدة</text>
+        <rect x="212" y="414" width="94" height="132" rx="12" fill="url(#poster1)"/>
+        <rect x="110" y="414" width="94" height="132" rx="12" fill="url(#poster2)"/>
+        <rect x="8"   y="414" width="94" height="132" rx="12" fill="url(#poster3)"/>
+        <rect x="212" y="534" width="94" height="3" rx="2" fill="#D69A5E"/>
+        <rect x="110" y="534" width="94" height="3" rx="2" fill="#252A2A"/>
+        <rect x="110" y="534" width="38" height="3" rx="2" fill="#D69A5E"/>
+        <rect x="8" y="534" width="94" height="3" rx="2" fill="#D69A5E"/>
+        <text x="306" y="552" text-anchor="end" fill="#F5F7F8" font-size="10">منعطف خطر</text>
+        <text x="204" y="552" text-anchor="end" fill="#F5F7F8" font-size="10">وطن آخر</text>
+        <text x="102" y="552" text-anchor="end" fill="#F5F7F8" font-size="10">شمس القاهرة</text>
+        <text x="306" y="566" text-anchor="end" fill="#969CA3" font-size="9">الحلقة ٤</text>
+        <text x="204" y="566" text-anchor="end" fill="#969CA3" font-size="9">الحلقة ٤</text>
+        <text x="102" y="566" text-anchor="end" fill="#969CA3" font-size="9">الحلقة ٤</text>
+
+        <text x="306" y="596" text-anchor="end" fill="#F5F7F8" font-size="13" font-weight="700">أفلام مقترحة</text>
+        <rect x="212" y="606" width="94" height="46" rx="10" fill="url(#poster2)"/>
+        <rect x="110" y="606" width="94" height="46" rx="10" fill="url(#poster3)"/>
+        <rect x="8"   y="606" width="94" height="46" rx="10" fill="url(#poster1)"/>
+
+        <rect x="10" y="616" width="300" height="46" rx="23" fill="#15191E" opacity="0.96"/>
+        <circle cx="266" cy="632" r="5" fill="#D69A5E"/>
+        <text x="266" y="652" text-anchor="middle" fill="#D69A5E" font-size="8">الرئيسية</text>
+        <circle cx="196" cy="632" r="5" fill="none" stroke="#969CA3"/>
+        <text x="196" y="652" text-anchor="middle" fill="#969CA3" font-size="8">البحث</text>
+        <circle cx="126" cy="632" r="5" fill="none" stroke="#969CA3"/>
+        <text x="126" y="652" text-anchor="middle" fill="#969CA3" font-size="8">المكتبة</text>
+        <circle cx="56" cy="632" r="5" fill="none" stroke="#969CA3"/>
+        <text x="56" y="652" text-anchor="middle" fill="#969CA3" font-size="8">حسابي</text>
+      </svg>
+      <div class="cap">هيرو · بطاقة حفلة · قيد المشاهدة · صفوف كتالوج · شريط عائم</div>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0">بنية الصفحة من أعلى إلى أسفل</h3>
+      <ul>
+        <li><b style="color:var(--text)">الهيرو</b>: تدرّج من صورة الملصق إلى الخلفية، عنوان 30–32، سطر معلومات، زرّان (تشغيل نحاسي + تفاصيل محدّد).</li>
+        <li><b style="color:var(--text)">بطاقة الحفلة الجارية</b>: تظهر فقط عند وجود حفلة نشطة — ملصق صغير + عدد المشاركين + زر «شاهد معهم».</li>
+        <li><b style="color:var(--text)">شريط الإضافة المعطّلة</b>: شريط صغير أعلى الصفحة عند تعطّل إضافة، بزر «عرض».</li>
+        <li><b style="color:var(--text)">قيد المشاهدة</b>: صف أفقي من بطاقات ملصقات مع شريط تقدّم نحاسي أسفل كل ملصق، وعنوان الحلقة تحته.</li>
+        <li><b style="color:var(--text)">صفوف الكتالوج</b>: كل كتالوج من الإضافات يأتي صفًا أفقيًا بعنوان 13 نصف عريض، قابل للطي والترتيب والإخفاء من الإعدادات.</li>
+        <li><b style="color:var(--text)">صف المجموعات</b>: بطاقات أفقية عريضة للمجموعات المخصّصة.</li>
+        <li><b style="color:var(--text)">الشريط العائم</b>: 4 تبويبات (الرئيسية · البحث · المكتبة · حسابي) في كبسولة عائمة، النشط نحاسي.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ عرض الكتالوجات ============ -->
+<section class="page">
+  <div class="kicker">04 · طريقة عرض الكتالوجات</div>
+  <h1 style="font-size:24pt">كيف تُعرض الكتالوجات</h1>
+  <p>كل كتالوج يأتي من إضافة Stremio. التطبيق يعرضه بثلاث هيئات: صف أفقي في الرئيسية، وشبكة في شاشة الكتالوج، وبطاقات عريضة 16:9 للعناصر الأفقية.</p>
+
+  <div class="two" style="margin-top:4mm">
+    <div class="phone-wrap">
+      <svg width="72mm" height="148mm" viewBox="0 0 300 620" role="img" aria-label="شاشة كتالوج بشبكة">
+        <rect width="300" height="620" rx="24" fill="#0B0D10"/>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A3A2A"/><stop offset="1" stop-color="#1A1611"/></linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A2A2A"/><stop offset="1" stop-color="#1B1010"/></linearGradient>
+          <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E4A3A"/><stop offset="1" stop-color="#101911"/></linearGradient>
+          <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A3A4A"/><stop offset="1" stop-color="#101419"/></linearGradient>
+        </defs>
+        <text x="284" y="42" text-anchor="end" fill="#F5F7F8" font-size="16" font-weight="700">أفلام أضيفت حديثًا</text>
+        <text x="284" y="60" text-anchor="end" fill="#969CA3" font-size="9">من إضافة: السينما العربية</text>
+        <!-- filter chips -->
+        <rect x="216" y="76" width="68" height="24" rx="12" fill="#2A211A" stroke="#D69A5E" stroke-width="1"/>
+        <text x="250" y="92" text-anchor="middle" fill="#D69A5E" font-size="9.5" font-weight="600">الكل</text>
+        <rect x="150" y="76" width="58" height="24" rx="12" fill="#1A1E23"/>
+        <text x="179" y="92" text-anchor="middle" fill="#B8BEC5" font-size="9.5">أفلام</text>
+        <rect x="92" y="76" width="50" height="24" rx="12" fill="#1A1E23"/>
+        <text x="117" y="92" text-anchor="middle" fill="#B8BEC5" font-size="9.5">مسلسلات</text>
+        <!-- grid 3 columns -->
+        <rect x="204" y="116" width="84" height="118" rx="12" fill="url(#g1)"/>
+        <rect x="108" y="116" width="84" height="118" rx="12" fill="url(#g2)"/>
+        <rect x="12"  y="116" width="84" height="118" rx="12" fill="url(#g3)"/>
+        <text x="288" y="250" text-anchor="end" fill="#F5F7F8" font-size="9.5">بيت من رمل</text>
+        <text x="192" y="250" text-anchor="end" fill="#F5F7F8" font-size="9.5">المسافة صفر</text>
+        <text x="96"  y="250" text-anchor="end" fill="#F5F7F8" font-size="9.5">زواج صناعي</text>
+        <text x="288" y="263" text-anchor="end" fill="#969CA3" font-size="8">2024 · دراما</text>
+        <text x="192" y="263" text-anchor="end" fill="#969CA3" font-size="8">2025 · thriller</text>
+        <text x="96"  y="263" text-anchor="end" fill="#969CA3" font-size="8">2023 · كوميديا</text>
+
+        <rect x="204" y="284" width="84" height="118" rx="12" fill="url(#g4)"/>
+        <rect x="108" y="284" width="84" height="118" rx="12" fill="url(#g3)"/>
+        <rect x="12"  y="284" width="84" height="118" rx="12" fill="url(#g1)"/>
+        <text x="288" y="418" text-anchor="end" fill="#F5F7F8" font-size="9.5">ما وراء الضباب</text>
+        <text x="192" y="418" text-anchor="end" fill="#F5F7F8" font-size="9.5">الطريق إلى here</text>
+        <text x="96"  y="418" text-anchor="end" fill="#F5F7F8" font-size="9.5">ليل طويل</text>
+
+        <rect x="204" y="452" width="84" height="118" rx="12" fill="url(#g2)"/>
+        <rect x="108" y="452" width="84" height="118" rx="12" fill="url(#g1)"/>
+        <rect x="12"  y="452" width="84" height="118" rx="12" fill="url(#g4)"/>
+        <text x="150" y="596" text-anchor="middle" fill="#969CA3" font-size="9">يُحمّل المزيد تلقائيًا عند نهاية الشبكة</text>
+      </svg>
+      <div class="cap">شاشة الكتالوج: عنوان + مصدر + شرائح تصفية + شبكة ٣ أعمدة</div>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0">تشريح البطاقة والقيم الفعلية</h3>
+      <ul>
+        <li>الملصق بنسبة <b style="color:var(--text)">2:3</b>، حواف <b style="color:var(--text)">12</b>، بلا ظل دائم — الظل يظهر عند اللمس فقط (حركة الرفع).</li>
+        <li>العنوان تحت الملصق مباشرة 13 نصف عريض، والسطر الثاني 9–11 باهت (سنة · نوع).</li>
+        <li>الصف الأفقي: فراغ بين البطاقات 14، وعنوان القسم 13 فوقه مع سهم «المزيد» يفتح الكتالوج كاملًا.</li>
+        <li>بطاقات <b style="color:var(--text)">قيد المشاهدة</b> تحمل شريط تقدّم نحاسي 3 بكسل أسفل الملصق، ونسبة المشاهدة محفوظة لكل حلقة.</li>
+        <li>البطاقات العريضة (للمشاهد والمجموعات) بنسبة <b style="color:var(--text)">16:9</b> وعرض 1.64 ضعف الملصق القياسي.</li>
+        <li>شرائح التصفية أعلى شاشة الكتالوج: كبسولات، المختار بحد نحاسي وخلفية #2A211A.</li>
+        <li>الشبكة 3 أعمدة على الهاتف وأكثر على الجهاز اللوحي، مع تحميل متتابع لا نهائي.</li>
+        <li>حالة التحميل: هيكل رمادي متحرك (Shimmer) بنفس شكل البطاقات — لا مؤشر دائري.</li>
+      </ul>
+      <h3>ما يظهر تحت كل ملصق</h3>
+      <ul>
+        <li>الاسم فقط في صفوف الرئيسية. الاسم + السنة + النوع في شبكة الكتالوج.</li>
+        <li>شارات صغيرة فوق الملصق عند الحاجة: «قيد المشاهدة»، «مكتمل»، إضافة المصدر.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ المشغّل ============ -->
+<section class="page">
+  <div class="kicker">05 · المشغّل</div>
+  <h1 style="font-size:24pt">المشغّل كما هو</h1>
+
+  <div class="two">
+    <div class="phone-wrap">
+      <svg width="76mm" height="157mm" viewBox="0 0 320 660" role="img" aria-label="المشغّل الحالي">
+        <rect width="320" height="660" rx="26" fill="#050607"/>
+        <defs>
+          <radialGradient id="sceneA" cx="0.5" cy="0.45" r="0.8">
+            <stop offset="0" stop-color="#2B3A4E"/><stop offset="1" stop-color="#070A0F"/>
+          </radialGradient>
+        </defs>
+        <rect width="320" height="660" fill="url(#sceneA)"/>
+        <text x="300" y="40" text-anchor="end" fill="#F5F7F8" font-size="11">الظل الأخير ›</text>
+        <rect x="16" y="26" width="26" height="26" rx="8" fill="#0F1319" opacity="0.9"/>
+        <rect x="48" y="26" width="26" height="26" rx="8" fill="#0F1319" opacity="0.9"/>
+
+        <rect x="0" y="470" width="320" height="190" fill="#000000" opacity="0.72"/>
+        <text x="300" y="516" text-anchor="end" fill="#F5F7F8" font-size="10">01:12:34</text>
+        <text x="24" y="516" text-anchor="start" fill="#B8BEC5" font-size="10">02:54:08</text>
+        <rect x="24" y="528" width="276" height="3" rx="2" fill="#4C4C4C"/>
+        <rect x="24" y="528" width="112" height="3" rx="2" fill="#D69A5E"/>
+        <circle cx="136" cy="529.5" r="5" fill="#D69A5E"/>
+
+        <circle cx="160" cy="590" r="26" fill="#D69A5E"/>
+        <path d="M154 578l20 12-20 12z" fill="#14171B"/>
+
+        <g fill="none" stroke="#F5F7F8" stroke-width="2">
+          <circle cx="60" cy="590" r="16"/>
+          <circle cx="260" cy="590" r="16"/>
+          <rect x="28" y="610" width="20" height="14" rx="3"/>
+          <rect x="84" y="610" width="20" height="14" rx="3"/>
+          <rect x="140" y="610" width="20" height="14" rx="3"/>
+          <rect x="196" y="610" width="20" height="14" rx="3"/>
+          <rect x="252" y="610" width="20" height="14" rx="3"/>
+        </g>
+        <text x="60" y="595" text-anchor="middle" fill="#F5F7F8" font-size="8">10</text>
+        <text x="260" y="595" text-anchor="middle" fill="#F5F7F8" font-size="8">10</text>
+        <rect x="140" y="650" width="40" height="4" rx="2" fill="#C8C8C8"/>
+      </svg>
+      <div class="cap">شريط تقدّم + صفّا أزرار فوق طبقة عتمة 72%</div>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0">ما يوجد في المشغّل</h3>
+      <ul>
+        <li>زر تشغيل مركزي نحاسي 52، وأزرار تقديم 10 ثوانٍ على الجانبين.</li>
+        <li>صف أدوات: المصادر · الحلقات · الترجمة · الصوت · السرعة · جودة البث · الفصول · مؤقّت النوم · التقاط الشاشة.</li>
+        <li>شريط تقدّم بزوايا دائرية ورأس نحاسي، مع مخزن مؤقت يظهر بلون أفتح.</li>
+        <li>أزرار قفز ذكية: تخطّي المقدمة والنهاية من Skip Intro، وبطاقة «الحلقة التالية» تلقائيًا.</li>
+        <li>لوحات منزلقة: الحلقات (مع بحث داخلها)، المصادر (مع بحث وتصفية حسب الإضافة)، الترجمة (اختيار وتوقيت وحجم ولون وخلفية)، الفصول.</li>
+        <li>إيماءات: سحب أفقي للتقديم، عمودي يمين للصوت، عمودي يسار للإضاءة، ضغط مطوّل للسرعة.</li>
+        <li>لوحة الحفلة: أعضاء + دردشة + صوت + مزامنة.</li>
+        <li>أوفرلايات: المقدمة، الدليل الأبوي، معلومات البث، البطء مؤقتًا.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ جرد الشاشات ============ -->
+<section class="page">
+  <div class="kicker">06 · جرد كامل</div>
+  <h1 style="font-size:24pt">كل ما داخل التطبيق</h1>
+  <p>القائمة الكاملة للشاشات الحالية، حتى تُقارن أي تصميم مقترح مع الواقع لا مع خيال.</p>
+
+  <div class="inv"><b>الدخول والحساب</b><p>تسجيل ودخول Supabase · استعادة كلمة المرور · ربط جهاز · اختيار الخادم (Jellyfin/Emby) · اختيار ملف شخصي بصورة ورقم سري اختياري.</p></div>
+  <div class="inv"><b>الرئيسية</b><p>هيرو قابل للتمرير · بطاقة حفلة جارية · شريط الإضافة المعطّلة · قيد المشاهدة · صفوف كتالوج من الإضافات · المجموعات · إعدادات الرئيسية (إخفاء وترتيب أي صف).</p></div>
+  <div class="inv"><b>الكتالوجات</b><p>شاشة كتالوج كاملة بشرائح تصفية وشبكة ٣ أعمدة وتحميل متتابع · فتح أي صف من الرئيسية أو من إضافة.</p></div>
+  <div class="inv"><b>البحث والاستكشاف</b><p>بحث نصّي عبر الإضافات والخادم · سجل بحث · صفحة استكشاف بمحتوى مختار · نتائج مختلطة أفلام ومسلسلات وأشخاص.</p></div>
+  <div class="inv"><b>التفاصيل</b><p>هيرو بمقطع دعائي يُشغَّل في الخلفية · الوصف وطاقم العمل والتقييمات (IMDb, TMDb, Trakt, Rotten) · المواسم والحلقات بحالتين شبكة وقائمة · مشابهات · تريلرات · أزرار (تشغيل · المفضلة · قائمة · تحميل · مشاركة).</p></div>
+  <div class="inv"><b>المشغّل</b><p>محرّك mpv/ExoPlayer · المصادر والحلقات والترجمة والصوت والفصول · تخطّي المقدمة والنهاية · الحلقة التالية · مؤقّت نوم · PiP · مشغّلات خارجية (Infuse, VLC) · لوحة الحفلة.</p></div>
+  <div class="inv"><b>الحفلة</b><p>إنشاء وانضمام برمز · مزامنة مشاهدة · دردشة · صوت مع اختيار جهاز الإخراج وتنبيه ضعف الاتصال · حفلاتي (سجل الحفلات) · أكمل من موضع الحفلة.</p></div>
+  <div class="inv"><b>المكتبة والمفضلة</b><p>مكتبة موحّدة (سجل · قوائم · تحميلات) بعرض شبكة أو قائمة · المفضلة بشبكة وبحث وترتيب · قوائم قابلة للإنشاء والتحرير.</p></div>
+  <div class="inv"><b>الإضافات</b><p>إدارة إضافات Stremio (تثبيت · حذف · تفعيل · تعطيل · ترتيب) · فحص المصادر بحالة كل إضافة وزمن استجابة · مركز تحديثات الإضافات والتطبيق · نقل المصادر (تصدير/استيراد JSON).</p></div>
+  <div class="inv"><b>الإحصائيات والتحميلات</b><p>إحصائيات مشاهدة (وقت · مكتمل · قيد المشاهدة · الأكثر مشاهدة · رسوم ٧ و٣٠ يومًا) · تصدير CSV · شاشة التحميلات بحالة حية وإشعارات.</p></div>
+  <div class="inv"><b>الإعدادات</b><p>المظهر (ثيمات وألوان وأيقونات وحواف البطاقات) · التشغيل (محرك · مخزن · ترجمة · تخطّي) · الحساب والتتبّع (Trakt, Simkl, MdbList) · الخوادم · Debrid · الإشعارات · اللغة · حول وتراخيص.</p></div>
+</section>
+
+<!-- ============ الخلاصة ============ -->
+<section class="page">
+  <div class="kicker">07 · الخطوة التالية</div>
+  <h1 style="font-size:24pt">الاتجاهات المقترحة</h1>
+  <p>هذه الوثيقة هي «نقطة الصفر». الاتجاهات الخمسة المقترحة الجديدة — كل واحد بأيقونة ولوحة ألوان وشاشة رئيسية — في الصفحة المجاورة:</p>
+  <p style="font-size:13pt; color:var(--copper)">
+    <a href="designs-v3.html">افتح التصاميم المقترحة الخمسة ← designs-v3.html</a>
+  </p>
+  <hr class="rule">
+  <ul>
+    <li>اللوحات السابقة لا تزال متاحة: <a href="design.html">design.html</a> (الهوية الحالية + سينمائية) و<a href="designs-v2.html">designs-v2.html</a> (العاجي · الشفق · بوليد).</li>
+    <li>كل القيم في هذه الوثيقة مأخوذة من <span dir="ltr">ThemeColors.kt · Tokens.kt · Theme.kt</span> في الكود الفعلي.</li>
+  </ul>
+</section>
+
+</body>
+</html>
