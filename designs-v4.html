@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAIF — خمسة تصاميم مختلفة البنية</title>
+<style>
+  :root { --bg:#0A0B10; --text:#F3F4F8; --muted:#A8B0C2; --faint:#77808F; --line:#1E2330; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:"Noto Sans Arabic","SF Arabic",-apple-system,"Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .page { width:100%; max-width:920px; margin:0 auto; padding:40px 22px 56px; border-bottom:1px solid var(--line); }
+  .page:last-child { border-bottom:0; }
+  .kicker { font-size:11px; letter-spacing:3px; color:var(--faint); }
+  h1 { font-size:38px; line-height:1.15; margin:10px 0 14px; }
+  h3 { font-size:15px; margin:22px 0 8px; }
+  p, li { font-size:14.5px; line-height:1.85; color:var(--muted); margin:0 0 10px; }
+  ul { margin:0 0 12px; padding-inline-start:20px; }
+  .lead { font-size:16px; color:var(--text); }
+  .rule { height:1px; background:var(--line); margin:24px 0; border:0; }
+  .cap { text-align:center; font-size:12px; color:var(--faint); margin-top:6px; }
+  .phone { display:block; margin:16px auto 4px; max-width:330px; width:100%; height:auto; }
+  .two { display:flex; gap:26px; flex-wrap:wrap; }
+  .two > div { flex:1 1 300px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+  .card { border:1px solid var(--line); border-radius:18px; padding:18px; }
+  .card h4 { margin:0 0 8px; font-size:16px; }
+  .card p { font-size:13px; margin:0; }
+  .badge { display:inline-block; font-size:11px; padding:3px 10px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
+  .cover { padding-top:80px; padding-bottom:80px; }
+  table.cmp { width:100%; border-collapse:collapse; font-size:13px; }
+  table.cmp th, table.cmp td { border:1px solid var(--line); padding:8px 10px; text-align:right; color:var(--muted); }
+  table.cmp th { color:var(--text); font-weight:600; }
+  .diff { border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:14px 0; background:#0E1017; }
+  .diff b { color:var(--text); }
+  @media (max-width:520px){ h1{font-size:27px;} }
+</style>
+</head>
+<body>
+
+<!-- ===== الغلاف ===== -->
+<section class="page cover">
+  <div class="kicker">RAIF · جولة الرابعة · بنية لا لون</div>
+  <h1 style="font-size:46px">خمسة تصاميم تغيّر<br>البنية نفسها</h1>
+  <p class="lead">نقدك صحيح: الجولات السابقة أعادت رسم الشاشة نفسها بألوان أخرى. هنا كل اتجاه يغيّر شيئًا أعمق: كيف تتصفّح الكتالوجات، وأين تظهر الملاحة، وبأي شكل تُعرض الأفلام. الخمسة ترسم لوحة الألوان الحالية أو أي لوحة أخرى تختارها — الفكرة في البنية.</p>
+  <hr class="rule">
+  <div class="grid2">
+    <div class="card"><h4>١ · المجلة</h4><p>لا هيرو ولا صفوف: صفحة تحريرية بعناوين ضخمة وأرقام وفواصل.</p></div>
+    <div class="card"><h4>٢ · القاعة</h4><p>بلا شريط تبويب إطلاقًا: بطاقة واحدة بعرض الشاشة، والتمرير للأعلى يقلّبها.</p></div>
+    <div class="card"><h4>٣ · الشبكة</h4><p>البحث أولًا، ثم شبكة كثيفة صغيرة بلا هيرو. معلومات قبل الصورة.</p></div>
+    <div class="card"><h4>٤ · الشريط</h4><p>كاروسيل كبير يملأ الشاشة، وتحته شريط فيلم كأنه مسرح مقصودة.</p></div>
+    <div class="card"><h4>٥ · الرفوف</h4><p>شريط جانبي عمودي بدل الشريط السفلي، وعرض من لوحين.</p></div>
+  </div>
+</section>
+
+<!-- ===== 1 · المجلة ===== -->
+<section class="page" style="background:#F5F2EA; color:#16130E">
+  <div class="kicker" style="color:#8A857A">01 · المجلة — Editorial</div>
+  <h1 style="color:#16130E">المجلة</h1>
+  <p style="color:#5E574A">التطبيق كصفحة صحيفة: عنوان ضخم أعلى، ثم سطور مرقّمة بعناوين كبيرة وصورة صغيرة، وفاصل شعري بين كل سطرين. لا هيرو ولا بطاقات ملصقات كبيرة. التصفح بالقراءة لا بالسحب على الملصقات.</p>
+
+  <svg class="phone" viewBox="0 0 330 660" role="img" aria-label="رئيسية المجلة">
+    <rect width="330" height="660" fill="#F5F2EA"/>
+    <defs>
+      <linearGradient id="mgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C9BFA9"/><stop offset="1" stop-color="#6A6250"/></linearGradient>
+      <linearGradient id="mgB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8A6E58"/><stop offset="1" stop-color="#33291F"/></linearGradient>
+      <linearGradient id="mgC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6E7E6A"/><stop offset="1" stop-color="#25301F"/></linearGradient>
+    </defs>
+    <!-- masthead -->
+    <text x="165" y="52" text-anchor="middle" fill="#16130E" font-size="34" font-weight="700" letter-spacing="6">RAIF</text>
+    <text x="165" y="70" text-anchor="middle" fill="#8A857A" font-size="9" letter-spacing="2">الأحد · مراجعة اليوم</text>
+    <rect x="20" y="82" width="290" height="2" fill="#16130E"/>
+    <!-- featured article -->
+    <text x="20" y="104" fill="#0F5B52" font-size="10" font-weight="700" letter-spacing="1">اختيار المحرّر</text>
+    <rect x="20" y="114" width="290" height="120" rx="4" fill="url(#mgA)"/>
+    <text x="20" y="262" fill="#16130E" font-size="24" font-weight="700">الظل الأخير</text>
+    <text x="20" y="282" fill="#5E574A" font-size="11">دراما · 2025 · ثماني حلقات · 8.4</text>
+    <rect x="20" y="296" width="290" height="1" fill="#16130E"/>
+    <!-- numbered rows -->
+    <text x="20" y="330" fill="#B9A98A" font-size="26" font-weight="700">01</text>
+    <rect x="246" y="306" width="64" height="40" rx="3" fill="url(#mgB)"/>
+    <text x="236" y="324" text-anchor="end" fill="#16130E" font-size="16" font-weight="700">وطن آخر</text>
+    <text x="236" y="341" text-anchor="end" fill="#8A857A" font-size="9.5">مسلسل · الحلقة ٤ قيد المشاهدة</text>
+    <rect x="20" y="358" width="290" height="1" fill="#E2DCCD"/>
+    <text x="20" y="390" fill="#B9A98A" font-size="26" font-weight="700">02</text>
+    <rect x="246" y="366" width="64" height="40" rx="3" fill="url(#mgC)"/>
+    <text x="236" y="384" text-anchor="end" fill="#16130E" font-size="16" font-weight="700">بيت من رمل</text>
+    <text x="236" y="401" text-anchor="end" fill="#8A857A" font-size="9.5">فيلم · جديد هذا الأسبوع</text>
+    <rect x="20" y="418" width="290" height="1" fill="#E2DCCD"/>
+    <text x="20" y="450" fill="#B9A98A" font-size="26" font-weight="700">03</text>
+    <rect x="246" y="426" width="64" height="40" rx="3" fill="url(#mgA)"/>
+    <text x="236" y="444" text-anchor="end" fill="#16130E" font-size="16" font-weight="700">المسافة صفر</text>
+    <text x="236" y="461" text-anchor="end" fill="#8A857A" font-size="9.5">فيلم · في المفضلة</text>
+    <rect x="20" y="478" width="290" height="1" fill="#E2DCCD"/>
+    <!-- section strip -->
+    <text x="20" y="512" fill="#16130E" font-size="13" font-weight="700">الأقسام</text>
+    <text x="20" y="536" fill="#0F5B52" font-size="11">مسلسلات · أفلام · وثائقيات · قائمتي</text>
+    <!-- top text tabs -->
+    <rect x="14" y="610" width="302" height="40" rx="4" fill="none" stroke="#16130E" stroke-width="0.8"/>
+    <text x="290" y="634" text-anchor="middle" fill="#16130E" font-size="10.5" font-weight="700" text-decoration="underline">الرئيسية</text>
+    <text x="222" y="634" text-anchor="middle" fill="#8A857A" font-size="10.5">بحث</text>
+    <text x="150" y="634" text-anchor="middle" fill="#8A857A" font-size="10.5">المكتبة</text>
+    <text x="82" y="634" text-anchor="middle" fill="#8A857A" font-size="10.5">حسابي</text>
+  </svg>
+  <div class="cap" style="color:#8A857A">صحيفة: شعار ضخم · مقال رئيسي · سطور مرقّمة · تبويب نصّي أعلى</div>
+
+  <div class="diff"><b>ما الذي يختلف بنيويًا:</b> بلا هيرو ولا صفوف أفقية إطلاقًا. الكتالوجات تصبح <b>أقسامًا مكتوبة</b> تفتح صفحة قائمة، والملاحة شريط نصّي أعلى الصفحة بدل الشريط العائم السفلي، والبؤرة على العناوين لا الملصقات.</div>
+  <h3>عرض الكتالوج في هذا التصميم</h3>
+  <ul style="color:#5E574A">
+    <li>قائمة سطور: رقم + عنوان + معلومات سطر + ملصق مصغّر 64 عرضًا — تمرير رأسي فقط.</li>
+    <li>كل قسم له صفحة بعنوان رئيسي كبير وفهرس حروف في الجانب للقفز السريع.</li>
+    <li>صفحة التفاصيل نفسها تحريرية: عنوان ضخم ثم فقرة ثم معلومات في جدول نصّي.</li>
+  </ul>
+  <p style="color:#8A857A"><span class="badge" style="border-color:#B9A98A">الكلفة</span> أعلى بكثير من جولات الألوان: إعادة بناء الرئيسية وشاشات الكتالوج بالكامل (HomeScreen + ShelfComponents + CatalogScreen) وبنية تنقّل جديدة.</p>
+</section>
+
+<!-- ===== 2 · القاعة ===== -->
+<section class="page" style="background:#07070F">
+  <div class="kicker" style="color:#5F5F76">02 · القاعة — Immersive Deck</div>
+  <h1>القاعة</h1>
+  <p>بلا شريط تبويب وبلا صفوف. الشاشة الواحدة = محتوى واحد بعرض الشاشة كاملًا، والسحب للأعلى يقلّب إلى التالي كما في البطاقات الرأسية. كل ما تحتاجه (بحث · مكتبة · قوائم) في ورقة سفلية واحدة تُفتح بزر دائري.</p>
+
+  <svg class="phone" viewBox="0 0 330 660" role="img" aria-label="رئيسية القاعة">
+    <defs>
+      <linearGradient id="thHero" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A2450"/><stop offset="0.5" stop-color="#241430"/><stop offset="1" stop-color="#07070F"/></linearGradient>
+      <linearGradient id="thNext" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2C3458"/><stop offset="1" stop-color="#0E1018"/></linearGradient>
+    </defs>
+    <rect width="330" height="660" fill="#07070F"/>
+    <rect width="330" height="560" fill="url(#thHero)"/>
+    <!-- next card peeking -->
+    <rect x="0" y="560" width="330" height="40" fill="url(#thNext)"/>
+    <text x="165" y="585" text-anchor="middle" fill="#5F5F76" font-size="9">التالي ↓</text>
+    <!-- on-card controls -->
+    <circle cx="286" cy="52" r="16" fill="#10101F" opacity="0.8"/>
+    <text x="286" y="56" text-anchor="middle" fill="#EAEAF5" font-size="10">⋮</text>
+    <circle cx="250" cy="52" r="16" fill="#10101F" opacity="0.8"/>
+    <text x="250" y="56" text-anchor="middle" fill="#EAEAF5" font-size="9">+</text>
+    <text x="310" y="470" text-anchor="end" fill="#F5EFF7" font-size="30" font-weight="700">الظل الأخير</text>
+    <text x="310" y="492" text-anchor="end" fill="#B9A6C9" font-size="11">2025 · دراما · 8.4 · الموسم ٢</text>
+    <rect x="200" y="508" width="110" height="34" rx="17" fill="#E86FA0"/>
+    <text x="255" y="530" text-anchor="middle" fill="#140C1C" font-size="11.5" font-weight="700">▶ شاهد الآن</text>
+    <rect x="130" y="508" width="62" height="34" rx="17" fill="#10101F" stroke="#3A2848"/>
+    <text x="161" y="530" text-anchor="middle" fill="#F5EFF7" font-size="10">تفاصيل</text>
+    <text x="310" y="544" text-anchor="end" fill="#9E8CB0" font-size="9">١٢ عرضًا متبقية في هذا الموسم</text>
+    <!-- paging dots -->
+    <circle cx="165" cy="586" r="2.5" fill="#E86FA0"/>
+    <circle cx="180" cy="586" r="2.5" fill="#3A2848"/>
+    <circle cx="195" cy="586" r="2.5" fill="#3A2848"/>
+    <circle cx="210" cy="586" r="2.5" fill="#3A2848"/>
+    <circle cx="225" cy="586" r="2.5" fill="#3A2848"/>
+    <!-- central hub button -->
+    <circle cx="165" cy="626" r="24" fill="#10101F" stroke="#E86FA0" stroke-width="1.4"/>
+    <circle cx="165" cy="626" r="3" fill="#E86FA0"/>
+    <circle cx="165" cy="618" r="3" fill="#F5EFF7"/>
+    <circle cx="165" cy="634" r="3" fill="#F5EFF7"/>
+    <circle cx="157" cy="626" r="3" fill="#F5EFF7"/>
+    <circle cx="173" cy="626" r="3" fill="#F5EFF7"/>
+    <text x="212" y="630" fill="#5F5F76" font-size="9">القائمة</text>
+    <text x="120" y="630" text-anchor="end" fill="#5F5F76" font-size="9">البحث</text>
+  </svg>
+  <div class="cap">بطاقة واحدة بعرض الشاشة · سحب للأعلى يقلّب · زر مركزي يفتح كل الملاحة</div>
+
+  <div class="diff"><b>ما الذي يختلف بنيويًا:</b> الشريط العائم السفلي <b>محذوف</b>. لا صفوف ولا شبكات في الرئيسية — «قاعة» تعرض عملاً واحدًا كاملًا في كل مرة، والكتالوج نفسه قلب للبطاقات. الملاحة كلها في ورقة من الزر المركزي.</div>
+  <h3>عرض الكتالوج في هذا التصميم</h3>
+  <ul>
+    <li>فتح أي كتالوج = نفس القاعة: بطاقة لكل عمل، سحب أو ضغط للتنقّل، ونقاط للترقيم.</li>
+    <li>قفزة سريعة: ضغط طويل يفتح مصغّرات الشبكة للقفز لأي عنصر.</li>
+    <li>البحث من الزر المركزي: يعرض نتائج كبطاقات كاملة أيضًا.</li>
+  </ul>
+  <p><span class="badge">الكلفة</span> عالية: بنية تصفّح جديدة تمامًا (طبقة Paging عمودية فوق الكتالوجات)، لكنها تحترم كود الجلب الموجود — تغيير طبقة العرض فقط.</p>
+</section>
+
+<!-- ===== 3 · الشبكة ===== -->
+<section class="page" style="background:#101820; color:#EAF2F8">
+  <div class="kicker" style="color:#5C7180">03 · الشبكة — Dense Grid</div>
+  <h1 style="color:#EAF2F8">الشبكة</h1>
+  <p style="color:#8FA6B8">المعلومات أولًا والصورة ثانيًا. بحث كبير أعلى، ثم شبكة كثيفة من البطاقات الصغيرة (٤ أعمدة) تحمل التقييم والحالة كشارات، بلا هيرو إطلاقًا. تجربة «مكتبة بيانات» أكثر من تجربة «صالة عرض».</p>
+
+  <svg class="phone" viewBox="0 0 330 660" role="img" aria-label="رئيسية الشبكة">
+    <rect width="330" height="660" fill="#101820"/>
+    <defs>
+      <linearGradient id="gd1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E6E9E"/><stop offset="1" stop-color="#12202E"/></linearGradient>
+      <linearGradient id="gd2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9E5C6E"/><stop offset="1" stop-color="#2E1220"/></linearGradient>
+      <linearGradient id="gd3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5C9E6E"/><stop offset="1" stop-color="#122E1C"/></linearGradient>
+      <linearGradient id="gd4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9E8C4E"/><stop offset="1" stop-color="#2E2812"/></linearGradient>
+    </defs>
+    <!-- search first -->
+    <rect x="14" y="34" width="302" height="40" rx="10" fill="#182430"/>
+    <text x="300" y="59" text-anchor="end" fill="#5C7180" font-size="11">ابحث عن فيلم أو مسلسل…</text>
+    <circle cx="34" cy="54" r="7" fill="none" stroke="#5C7180" stroke-width="1.4"/>
+    <line x1="39" y1="59" x2="44" y2="64" stroke="#5C7180" stroke-width="1.4"/>
+    <!-- segmented filters -->
+    <rect x="14" y="88" width="72" height="26" rx="13" fill="#2FA8D8"/>
+    <text x="50" y="105" text-anchor="middle" fill="#101820" font-size="10" font-weight="700">الكل</text>
+    <rect x="92" y="88" width="66" height="26" rx="13" fill="none" stroke="#2A3A48"/>
+    <text x="125" y="105" text-anchor="middle" fill="#8FA6B8" font-size="10">أفلام</text>
+    <rect x="164" y="88" width="72" height="26" rx="13" fill="none" stroke="#2A3A48"/>
+    <text x="200" y="105" text-anchor="middle" fill="#8FA6B8" font-size="10">مسلسلات</text>
+    <rect x="242" y="88" width="74" height="26" rx="13" fill="none" stroke="#2A3A48"/>
+    <text x="279" y="105" text-anchor="middle" fill="#8FA6B8" font-size="10">قيد المشاهدة</text>
+    <!-- dense grid 4 cols -->
+    <rect x="14" y="130" width="70" height="98" rx="6" fill="url(#gd1)"/>
+    <rect x="90" y="130" width="70" height="98" rx="6" fill="url(#gd2)"/>
+    <rect x="166" y="130" width="70" height="98" rx="6" fill="url(#gd3)"/>
+    <rect x="242" y="130" width="74" height="98" rx="6" fill="url(#gd4)"/>
+    <!-- badges over tiles -->
+    <rect x="16" y="134" width="30" height="13" rx="3" fill="#2FA8D8"/>
+    <text x="31" y="144" text-anchor="middle" fill="#101820" font-size="7" font-weight="700">8.4</text>
+    <rect x="92" y="134" width="34" height="13" rx="3" fill="#E5A83C"/>
+    <text x="109" y="144" text-anchor="middle" fill="#101820" font-size="7" font-weight="700">٤٨٪</text>
+    <rect x="168" y="134" width="26" height="13" rx="3" fill="#3CC88C"/>
+    <text x="181" y="144" text-anchor="middle" fill="#101820" font-size="7" font-weight="700">مكتمل</text>
+    <rect x="244" y="134" width="42" height="13" rx="3" fill="#182430"/>
+    <text x="265" y="144" text-anchor="middle" fill="#EAF2F8" font-size="7">الحلقة ٤</text>
+    <!-- info rows under tiles -->
+    <text x="84" y="244" text-anchor="end" fill="#EAF2F8" font-size="9" font-weight="600">الطريق</text>
+    <text x="84" y="255" text-anchor="end" fill="#5C7180" font-size="7.5">فيلم · 2024</text>
+    <text x="160" y="244" text-anchor="end" fill="#EAF2F8" font-size="9" font-weight="600">المرصد</text>
+    <text x="160" y="255" text-anchor="end" fill="#5C7180" font-size="7.5">فيلم · 2025</text>
+    <text x="236" y="244" text-anchor="end" fill="#EAF2F8" font-size="9" font-weight="600">الغابة</text>
+    <text x="236" y="255" text-anchor="end" fill="#5C7180" font-size="7.5">مسلسل · 2023</text>
+    <text x="316" y="244" text-anchor="end" fill="#EAF2F8" font-size="9" font-weight="600">الظل الأخير</text>
+    <text x="316" y="255" text-anchor="end" fill="#5C7180" font-size="7.5">مسلسل · 2025</text>
+
+    <rect x="14" y="278" width="70" height="98" rx="6" fill="url(#gd2)"/>
+    <rect x="90" y="278" width="70" height="98" rx="6" fill="url(#gd4)"/>
+    <rect x="166" y="278" width="70" height="98" rx="6" fill="url(#gd1)"/>
+    <rect x="242" y="278" width="74" height="98" rx="6" fill="url(#gd3)"/>
+    <text x="316" y="392" text-anchor="end" fill="#5C7180" font-size="9">٤٨٢ عملاً · محدّث الآن</text>
+
+    <!-- continue watching compact list -->
+    <text x="316" y="430" text-anchor="end" fill="#EAF2F8" font-size="12" font-weight="700">قيد المشاهدة — قائمة مضغوطة</text>
+    <rect x="14" y="442" width="302" height="44" rx="8" fill="#182430"/>
+    <rect x="276" y="450" width="32" height="28" rx="4" fill="url(#gd4)"/>
+    <text x="268" y="462" text-anchor="end" fill="#EAF2F8" font-size="10">الظل الأخير · الحلقة ٤</text>
+    <text x="268" y="477" text-anchor="end" fill="#5C7180" font-size="8">بقي ٢١ دقيقة</text>
+    <rect x="24" y="477" width="150" height="3" rx="1.5" fill="#2A3A48"/>
+    <rect x="24" y="477" width="96" height="3" rx="1.5" fill="#2FA8D8"/>
+    <rect x="14" y="494" width="302" height="44" rx="8" fill="#182430"/>
+    <rect x="276" y="502" width="32" height="28" rx="4" fill="url(#gd2)"/>
+    <text x="268" y="514" text-anchor="end" fill="#EAF2F8" font-size="10">وطن آخر · الحلقة ٢</text>
+    <text x="268" y="529" text-anchor="end" fill="#5C7180" font-size="8">بقي ٤٤ دقيقة</text>
+    <!-- floating bar kept minimal -->
+    <rect x="14" y="596" width="302" height="48" rx="24" fill="#182430" stroke="#2A3A48"/>
+    <circle cx="288" cy="620" r="4" fill="#2FA8D8"/>
+    <text x="288" y="640" text-anchor="middle" fill="#2FA8D8" font-size="8">الرئيسية</text>
+    <circle cx="216" cy="620" r="4" fill="none" stroke="#5C7180" stroke-width="1.2"/>
+    <text x="216" y="640" text-anchor="middle" fill="#5C7180" font-size="8">مكتبتي</text>
+    <circle cx="144" cy="620" r="4" fill="none" stroke="#5C7180" stroke-width="1.2"/>
+    <text x="144" y="640" text-anchor="middle" fill="#5C7180" font-size="8">تحميلات</text>
+    <circle cx="72" cy="620" r="4" fill="none" stroke="#5C7180" stroke-width="1.2"/>
+    <text x="72" y="640" text-anchor="middle" fill="#5C7180" font-size="8">إضافات</text>
+  </svg>
+  <div class="cap" style="color:#5C7180">بحث أولًا · ٤ أعمدة كثيفة بشارات معلومات · قيد المشاهدة قائمة صفوف لا ملصقات</div>
+
+  <div class="diff"><b>ما الذي يختلف بنيويًا:</b> الهيرو والصفوف الأفقية <b>محذوفة</b>. الرئيسية شبكة تصفية واحدة، وقيد المشاهدة يتحول من ملصقات إلى صفوف مضغوطة، والتبويبات تصبح مسطّحة بلا طبقات (إضافات تظهر كتبويب).</div>
+  <h3>عرض الكتالوج في هذا التصميم</h3>
+  <ul style="color:#8FA6B8">
+    <li>شبكة ٤ أعمدة على الهاتف مع شرائح فرز (تقييم · تاريخ · حالة) وعدّاد النتائج حي.</li>
+    <li>شارات فوق كل ملصق: تقييم، نسبة مشاهدة، «مكتمل»، رقم الحلقة — كلها من البيانات الموجودة.</li>
+    <li>عرض القائمة البديل: صفوف مضغوطة بالمعلومات نفسها لمن يفضّل القراءة.</li>
+  </ul>
+  <p style="color:#5C7180"><span class="badge" style="border-color:#2A3A48">الكلفة</span> متوسطة: نفس بنية الكتالوج الحالية لكن بكثافة وشارات جديدة + إعادة ترتيب الرئيسية. الأقل جذرية بين الخمسة، والأعلى فائدة عملية.</p>
+</section>
+
+<!-- ===== 4 · الشريط ===== -->
+<section class="page" style="background:#0C0A08; color:#F3EDE2">
+  <div class="kicker" style="color:#8C7A5E">04 · الشريط — The Reel</div>
+  <h1 style="color:#F3EDE2">الشريط</h1>
+  <p style="color:#B8A88C">كأنك أمام مقصودة سينما: عملاً واحدًا كبيرًا يملأ الثلثين العلويين، وتحته «شريط فيلم» — مصغّرات محاطة بإطارات فيلم تتحرك مع الكاروسيل. الضغط على إطار يفتح العمل. الحركة جزء من الهوية.</p>
+
+  <svg class="phone" viewBox="0 0 330 660" role="img" aria-label="رئيسية الشريط">
+    <defs>
+      <linearGradient id="rlHero" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3E3420"/><stop offset="0.5" stop-color="#1E180E"/><stop offset="1" stop-color="#0C0A08"/></linearGradient>
+      <linearGradient id="rl1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A3A2A"/><stop offset="1" stop-color="#1A120C"/></linearGradient>
+      <linearGradient id="rl2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A4A5A"/><stop offset="1" stop-color="#0C1418"/></linearGradient>
+      <linearGradient id="rl3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A2A2A"/><stop offset="1" stop-color="#180A0A"/></linearGradient>
+    </defs>
+    <rect width="330" height="660" fill="#0C0A08"/>
+    <rect width="330" height="400" fill="url(#rlHero)"/>
+    <text x="310" y="330" text-anchor="end" fill="#F3EDE2" font-size="30" font-weight="700">الظل الأخير</text>
+    <text x="310" y="352" text-anchor="end" fill="#B8A88C" font-size="11">2025 · دراما · 8.4</text>
+    <rect x="196" y="366" width="114" height="32" rx="6" fill="#E5A85C"/>
+    <text x="253" y="388" text-anchor="middle" fill="#1A120C" font-size="11.5" font-weight="700">▶ شاهد</text>
+    <!-- filmstrip -->
+    <rect x="0" y="420" width="330" height="112" fill="#0C0A08"/>
+    <rect x="0" y="420" width="330" height="8" fill="#14110C"/>
+    <rect x="0" y="544" width="330" height="8" fill="#14110C"/>
+    <!-- sprocket holes -->
+    <g fill="#0C0A08">
+      <rect x="10" y="421" width="8" height="6" rx="1.5"/><rect x="42" y="421" width="8" height="6" rx="1.5"/><rect x="74" y="421" width="8" height="6" rx="1.5"/><rect x="106" y="421" width="8" height="6" rx="1.5"/><rect x="138" y="421" width="8" height="6" rx="1.5"/><rect x="170" y="421" width="8" height="6" rx="1.5"/><rect x="202" y="421" width="8" height="6" rx="1.5"/><rect x="234" y="421" width="8" height="6" rx="1.5"/><rect x="266" y="421" width="8" height="6" rx="1.5"/><rect x="298" y="421" width="8" height="6" rx="1.5"/>
+      <rect x="10" y="545" width="8" height="6" rx="1.5"/><rect x="42" y="545" width="8" height="6" rx="1.5"/><rect x="74" y="545" width="8" height="6" rx="1.5"/><rect x="106" y="545" width="8" height="6" rx="1.5"/><rect x="138" y="545" width="8" height="6" rx="1.5"/><rect x="170" y="545" width="8" height="6" rx="1.5"/><rect x="202" y="545" width="8" height="6" rx="1.5"/><rect x="234" y="545" width="8" height="6" rx="1.5"/><rect x="266" y="545" width="8" height="6" rx="1.5"/><rect x="298" y="545" width="8" height="6" rx="1.5"/>
+    </g>
+    <!-- frames -->
+    <rect x="92" y="432" width="60" height="86" rx="4" fill="url(#rl2)"/>
+    <rect x="158" y="428" width="72" height="94" rx="5" fill="url(#rl1)" stroke="#E5A85C" stroke-width="1.4"/>
+    <rect x="236" y="432" width="60" height="86" rx="4" fill="url(#rl3)"/>
+    <rect x="14" y="432" width="60" height="86" rx="4" fill="url(#rl3)" opacity="0.6"/>
+    <text x="194" y="562" text-anchor="middle" fill="#8C7A5E" font-size="9">الأكثر رواجًا هذا الأسبوع — اسحب الشريط</text>
+    <!-- rows below -->
+    <text x="310" y="592" text-anchor="end" fill="#F3EDE2" font-size="13" font-weight="700">قيد المشاهدة</text>
+    <rect x="236" y="602" width="74" height="44" rx="5" fill="url(#rl2)"/>
+    <rect x="156" y="602" width="74" height="44" rx="5" fill="url(#rl1)"/>
+    <!-- top bar -->
+    <text x="296" y="42" text-anchor="end" fill="#E5A85C" font-size="13" font-weight="700" letter-spacing="2">RAIF</text>
+    <circle cx="34" cy="38" r="10" fill="none" stroke="#8C7A5E" stroke-width="1.2"/>
+    <line x1="41" y1="45" x2="47" y2="51" stroke="#8C7A5E" stroke-width="1.2"/>
+  </svg>
+  <div class="cap" style="color:#8C7A5E">كاروسيل كبير + شريط فيلم بإطارات ومثاقيب · الأقسام صفوف ثانوية أدنى</div>
+
+  <div class="diff"><b>ما الذي يختلف بنيويًا:</b> التصفح الأساسي <b>كاروسيل أفقي</b> بدل قائمة رأسية، والشريط السفلي يستبدل بشريط فيلم تفاعلي كأداة تنقّل داخل القسم. الحركة (تدحرج الشريط) تُظهر الزمن والموسم.</div>
+  <h3>عرض الكتالوج في هذا التصميم</h3>
+  <ul style="color:#B8A88C">
+    <li>كل كتالوج «بكرة»: كاروسيل بإطارات، والإطار المختار يكبر ويعرض معلومات تحته قبل الضغط.</li>
+    <li>تبديل البكرات من الشريط السفلي المصغّر أو سحب أفقي.</li>
+    <li>قيد المشاهدة يظهر كإطارات في شريط دائم أسفل أي بكرة.</li>
+  </ul>
+  <p style="color:#8C7A5E"><span class="badge" style="border-color:#3A3020">الكلفة</span> متوسطة-عالية: مكوّن شريط أفقي جديد بإطارات + منطق كاروسيل. طبقة البيانات كما هي.</p>
+</section>
+
+<!-- ===== 5 · الرفوف ===== -->
+<section class="page" style="background:#0E1216; color:#EAF0F4">
+  <div class="kicker" style="color:#5E7280">05 · الرفوف — Two-Pane</div>
+  <h1 style="color:#EAF0F4">الرفوف</h1>
+  <p style="color:#8FA2B4">شريط أيقونات عمودي على الحافة (كأنه على جهاز لوحي حتى على الهاتف)، ومحتوى بعرض لوحين: قائمة تصنيفات على اليمين ومعاينة العمل على اليسار. كل شيء في شاشة واحدة دون فتح صفحات.</p>
+
+  <svg class="phone" viewBox="0 0 330 660" role="img" aria-label="رئيسية الرفوف">
+    <rect width="330" height="660" fill="#0E1216"/>
+    <defs>
+      <linearGradient id="shP" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4E5E76"/><stop offset="1" stop-color="#141C26"/></linearGradient>
+      <linearGradient id="shB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6E4E5A"/><stop offset="1" stop-color="#1A1216"/></linearGradient>
+    </defs>
+    <!-- vertical sidebar -->
+    <rect x="0" y="0" width="52" height="660" fill="#131920"/>
+    <rect x="0" y="0" width="1" height="660" fill="#242E38"/>
+    <g stroke="#5E7280" stroke-width="1.5" fill="none">
+      <rect x="19" y="40" width="14" height="12" rx="2"/><path d="M19 34l7-6 7 6" />
+      <circle cx="26" cy="100" r="7"/>
+      <rect x="19" y="156" width="14" height="14" rx="2"/><rect x="23" y="150" width="6" height="4" rx="1"/>
+      <circle cx="26" cy="212" r="5"/><path d="M26 205v-4M26 219v4M19 212h-4M33 212h4"/>
+      <rect x="19" y="262" width="14" height="12" rx="6"/>
+    </g>
+    <circle cx="26" cy="610" r="12" fill="#242E38"/>
+    <text x="26" y="614" text-anchor="middle" fill="#8FA2B4" font-size="9">ح</text>
+    <!-- right pane: category list -->
+    <rect x="52" y="0" width="128" height="660" fill="#0E1216"/>
+    <text x="168" y="52" text-anchor="end" fill="#EAF0F4" font-size="14" font-weight="700">مكتبتي</text>
+    <rect x="64" y="70" width="112" height="1" fill="#242E38"/>
+    <rect x="58" y="86" width="116" height="40" rx="8" fill="#1A242E"/>
+    <text x="166" y="104" text-anchor="end" fill="#4CC3E0" font-size="11" font-weight="600">قيد المشاهدة</text>
+    <text x="166" y="119" text-anchor="end" fill="#5E7280" font-size="8">١٤ عنصرًا</text>
+    <rect x="58" y="132" width="116" height="40" rx="8" fill="none" stroke="#242E38"/>
+    <text x="166" y="150" text-anchor="end" fill="#8FA2B4" font-size="11">المفضلة</text>
+    <text x="166" y="165" text-anchor="end" fill="#5E7280" font-size="8">٦٢ عنصرًا</text>
+    <rect x="58" y="178" width="116" height="40" rx="8" fill="none" stroke="#242E38"/>
+    <text x="166" y="196" text-anchor="end" fill="#8FA2B4" font-size="11">أضيفت حديثًا</text>
+    <text x="166" y="211" text-anchor="end" fill="#5E7280" font-size="8">أفلام · ٢٠٢٥</text>
+    <rect x="58" y="224" width="116" height="40" rx="8" fill="none" stroke="#242E38"/>
+    <text x="166" y="242" text-anchor="end" fill="#8FA2B4" font-size="11">مسلسلاتي</text>
+    <text x="166" y="257" text-anchor="end" fill="#5E7280" font-size="8">٨ عروض</text>
+    <rect x="58" y="270" width="116" height="40" rx="8" fill="none" stroke="#242E38"/>
+    <text x="166" y="288" text-anchor="end" fill="#8FA2B4" font-size="11">الكتالوجات</text>
+    <text x="166" y="303" text-anchor="end" fill="#5E7280" font-size="8">٣ إضافات</text>
+    <rect x="58" y="316" width="116" height="40" rx="8" fill="none" stroke="#242E38"/>
+    <text x="166" y="334" text-anchor="end" fill="#8FA2B4" font-size="11">قوائمي</text>
+    <text x="166" y="349" text-anchor="end" fill="#5E7280" font-size="8">٤ قوائم</text>
+    <!-- left pane: preview -->
+    <rect x="180" y="0" width="150" height="660" fill="#0B0F13"/>
+    <rect x="194" y="30" width="86" height="122" rx="10" fill="url(#shP)"/>
+    <text x="322" y="48" text-anchor="end" fill="#4CC3E0" font-size="8" font-weight="700">٨.٤</text>
+    <text x="322" y="176" text-anchor="end" fill="#EAF0F4" font-size="15" font-weight="700">الظل الأخير</text>
+    <text x="322" y="193" text-anchor="end" fill="#5E7280" font-size="9">مسلسل · ٢٠٢٥ · دراما</text>
+    <text x="322" y="209" text-anchor="end" fill="#8FA2B4" font-size="9" line-height="1.5">قصة عائلة تُطاردها</text>
+    <text x="322" y="223" text-anchor="end" fill="#8FA2B4" font-size="9">ذاكرة لا تخصّها…</text>
+    <rect x="270" y="236" width="52" height="26" rx="8" fill="#1A242E" stroke="#2E3C48"/>
+    <text x="296" y="253" text-anchor="middle" fill="#4CC3E0" font-size="9" font-weight="700">▶ شاهد</text>
+    <rect x="212" y="236" width="52" height="26" rx="8" fill="none" stroke="#2E3C48"/>
+    <text x="238" y="253" text-anchor="middle" fill="#8FA2B4" font-size="9">تفاصيل</text>
+    <!-- episodes mini rows -->
+    <text x="322" y="286" text-anchor="end" fill="#EAF0F4" font-size="11" font-weight="700">الحلقات</text>
+    <rect x="194" y="296" width="128" height="30" rx="6" fill="#131920"/>
+    <text x="314" y="315" text-anchor="end" fill="#8FA2B4" font-size="9">١ · المرة الأولى</text>
+    <rect x="194" y="332" width="128" height="30" rx="6" fill="#131920"/>
+    <text x="314" y="351" text-anchor="end" fill="#4CC3E0" font-size="9">٢ · بيت من ورق ●</text>
+    <rect x="194" y="368" width="128" height="30" rx="6" fill="#131920"/>
+    <text x="314" y="387" text-anchor="end" fill="#8FA2B4" font-size="9">٣ · المفتاح</text>
+    <!-- bottom: no tab bar, only gesture hint -->
+    <rect x="128" y="640" width="74" height="4" rx="2" fill="#2E3C48"/>
+  </svg>
+  <div class="cap" style="color:#5E7280">شريط عمودي جانبي · لوح تصنيفات · لوح معاينة مع حلقات — كل الشاشة واحدة</div>
+
+  <div class="diff"><b>ما الذي يختلف بنيويًا:</b> الشريط السفلي العائم <b>ينتقل إلى الحافة الجانبية عموديًا</b>، وصفحة التفاصيل تذوب داخل الرئيسية: تختار التصنيف فتظهر المعاينة بجانبه فورًا. يخدم الجهاز اللوحي أكثر، ويعمل على الهاتف بضغط الشريط الجانبي.</div>
+  <h3>عرض الكتالوج في هذا التصميم</h3>
+  <ul style="color:#8FA2B4">
+    <li>الكتالوج قائمة في اللوح الأيمن، والمعاينة الحية في اللوح الأيسر: ملصق + تقييم + حلقات مباشرة.</li>
+    <li>التفاصيل الكاملة تفتح بعرض كامل فقط عند الطلب — التصفح لا يخرجك من الشاشة.</li>
+    <li>الشريط الجانبي قابل للطي على الهاتف (سحب من الحافة) ليصبح المحتوى بعرض كامل.</li>
+  </ul>
+  <p style="color:#5E7280"><span class="badge" style="border-color:#2E3C48">الكلفة</span> متوسطة: مكوّن شريط جانبي + لوح معاينة جديدان، والشاشات الحالية تُستخدم كما هي عند فتحها بعرض كامل.</p>
+</section>
+
+<!-- ===== المقارنة ===== -->
+<section class="page">
+  <div class="kicker">المقارنة · والتوصية</div>
+  <h1 style="font-size:30px">خمسة هياكل، لا خمسة ألوان</h1>
+  <table class="cmp">
+    <tr><th>التصميم</th><th>التغيير البنيوي</th><th>الملاحة</th><th>الكلفة</th><th>أفضل لـ</th></tr>
+    <tr><td>المجلة</td><td>حذف الهيرو والصفوف؛ قراءة تحريرية مرقّمة</td><td>تبويب نصّي أعلى</td><td>عالية</td><td>حب القراءة والانتقائية</td></tr>
+    <tr><td>القاعة</td><td>حذف كل الشبكات؛ بطاقة واحدة + قلب</td><td>زر مركزي وورقة</td><td>عالية</td><td>المشاهدة الغامرة والليل</td></tr>
+    <tr><td>الشبكة</td><td>حذف الهيرو؛ شبكة كثيفة بشارات بيانات</td><td>الشريط السفلي كما هو</td><td>متوسطة</td><td>الاستخدام العملي السريع</td></tr>
+    <tr><td>الشريط</td><td>كاروسيل + شريط فيلم كأداة تصفّح</td><td>الشريط + البكرات</td><td>متوسطة-عالية</td><td>الهوية الحسّية والحركة</td></tr>
+    <tr><td>الرفوف</td><td>شريط جانبي + لوحان (تصنيف/معاينة)</td><td>حافة عمودية</td><td>متوسطة</td><td>الجهاز اللوحي والكثافة</td></tr>
+  </table>
+  <hr class="rule">
+  <h3>التوصية</h3>
+  <ul>
+    <li><strong>الشبكة</strong> أفضل نقطة بداية: تغيير بنيوي حقيقي (بلا هيرو، قيد المشاهدة صفوف، شارات معلومات) بكلفة متوسطة، ويبقى الشريط السفلي المألوف.</li>
+    <li><strong>الشريط</strong> ثانيًا: هوية حركية مميزة جدًا لواجهة «مكتبة أفلام»، ويصلح أن يكون شكل الكتالوجات حتى لو بقيت الرئيسية بالهيكل الحالي.</li>
+    <li><strong>القاعة</strong> أجرأ تجربة مشاهدة — يجمع جيدًا مع لوحة النيون أو الغسق من الجولة السابقة (بنية + لون معًا).</li>
+    <li><strong>المجلة</strong> و<strong>الرفوف</strong> اتجاهان متخصصان: الأول لمن يعامل التطبيق كصحيفة، والثاني لمن يستخدم جهازًا لوحيًا كثيرًا.</li>
+  </ul>
+  <hr class="rule">
+  <p style="font-size:12px; color:var(--faint)">
+    المرجع الكامل للتصميم الحالي: <a href="current.html" style="color:var(--text)">current.html</a> ·
+    لوحات الألوان: <a href="designs-v3.html" style="color:var(--text)">designs-v3.html</a> ·
+    الجولات السابقة: <a href="design.html" style="color:var(--text)">design.html</a> و<a href="designs-v2.html" style="color:var(--text)">designs-v2.html</a>
+  </p>
+</section>
+
+</body>
+</html>
