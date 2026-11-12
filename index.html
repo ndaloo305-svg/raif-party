@@ -599,7 +599,7 @@
   // ---------------------------------------------------------------- preview
   function loadPreview() {
     show("screen-loading");
-    rpc("watch_party_preview", { p_code: state.code }).then(function (preview) {
+    rpc("raif_party_preview", { p_code: state.code }).then(function (preview) {
       if (!preview) { messageScreen(errorText(null), true); return; }
       if (preview.error) { messageScreen(errorText(preview.error), true); return; }
       state.preview = preview;
@@ -640,7 +640,7 @@
     state.name = name;
     storeName(name);
     $("join-go").disabled = true;
-    rpc("watch_party_join", {
+    rpc("raif_party_join", {
       p_code: state.code,
       p_device_id: state.deviceId,
       p_display_name: name,
@@ -1531,7 +1531,7 @@
     if (!party) return;
     var previousMax = lastMessageId();
     var selfId = (state.snapshot && state.snapshot.member_id) || "";
-    rpc("watch_party_list_messages", {
+    rpc("raif_party_list_messages", {
       p_party_id: party.id,
       p_device_id: state.deviceId,
       p_after: null
@@ -1557,7 +1557,7 @@
     var party = state.snapshot && state.snapshot.party;
     if (!party) return;
     input.value = "";
-    rpc("watch_party_send_message", {
+    rpc("raif_party_send_message", {
       p_party_id: party.id,
       p_device_id: state.deviceId,
       p_body: body.slice(0, 500),
@@ -1926,7 +1926,7 @@
     if (!state.alive || !state.joined) return;
     var party = state.snapshot && state.snapshot.party;
     if (party) {
-      rpc("watch_party_heartbeat", { p_party_id: party.id, p_device_id: state.deviceId })
+      rpc("raif_party_heartbeat", { p_party_id: party.id, p_device_id: state.deviceId })
         .then(function (snapshot) {
           if (snapshot && snapshot.error) { endWith(snapshot.error); return; }
           applySnapshot(snapshot);
@@ -1948,7 +1948,7 @@
   // ------------------------------------------------------------------ leave
   function leaveRequest(partyId, keepAlive) {
     try {
-      return fetch(SUPABASE_URL + "/rest/v1/rpc/watch_party_leave", {
+      return fetch(SUPABASE_URL + "/rest/v1/rpc/raif_party_leave", {
         method: "POST",
         headers: {
           "apikey": ANON_KEY,
